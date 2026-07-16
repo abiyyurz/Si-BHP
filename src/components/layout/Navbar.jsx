@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Moon, Sun, Bell, LogOut, User, Shield, Layers, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getMaterials, getRequests } from '../../utils/storage';
+import logoImg from '../../assets/logo.png';
 
 export const Navbar = ({ onNavigate, currentPage }) => {
   const { currentUser, logout, darkMode, toggleDarkMode, isAdmin } = useAuth();
@@ -25,13 +26,11 @@ export const Navbar = ({ onNavigate, currentPage }) => {
             onClick={() => onNavigate('dashboard')}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-polbeng-blue to-teal-500 flex items-center justify-center text-white font-black text-xl shadow-md group-hover:scale-105 transition-transform">
-              BAP
-            </div>
+            <img src={logoImg} alt="Logo Politeknik Negeri Bengkalis" className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-slate-900 dark:text-white text-base tracking-tight font-sans">
-                  SI-BAP
+                  SI-BHP
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800">
                   v1.1 Polbeng
@@ -130,9 +129,13 @@ export const Navbar = ({ onNavigate, currentPage }) => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-3 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-sky-500 text-white flex items-center justify-center font-bold text-sm shadow">
-                {currentUser?.name?.charAt(0) || 'U'}
-              </div>
+              {currentUser?.avatar ? (
+                <img src={currentUser.avatar} alt="Foto profil" className="w-9 h-9 rounded-xl object-cover shadow" />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-sky-500 text-white flex items-center justify-center font-bold text-sm shadow">
+                  {currentUser?.name?.charAt(0) || 'U'}
+                </div>
+              )}
               <div className="hidden sm:block text-left">
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[130px]">
                   {currentUser?.name || 'Pengguna'}

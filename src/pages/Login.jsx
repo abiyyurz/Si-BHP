@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Toast } from '../components/common/Toast';
-import { Shield, User, ArrowRight, CheckCircle2, Wrench, UserPlus, Lock, Key } from 'lucide-react';
+import { ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
+import gedungImg from '../assets/gedung.jpeg';
+import logoImg from '../assets/logo.png';
 
 export const Login = ({ onLoginSuccess }) => {
   const { loginWithCredentials, registerNewAccount } = useAuth();
@@ -19,7 +21,7 @@ export const Login = ({ onLoginSuccess }) => {
   const [lastName, setLastName] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState('user');
+  const [regUserType, setRegUserType] = useState('mahasiswa');
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -45,7 +47,7 @@ export const Login = ({ onLoginSuccess }) => {
         last_name: lastName,
         username: regUsername,
         password: regPassword,
-        role: regRole
+        user_type: regUserType
       });
 
       // Show success feedback
@@ -57,7 +59,7 @@ export const Login = ({ onLoginSuccess }) => {
       // AUTO REDIRECT BACK TO LOGIN TAB WITH PRE-FILLED USERNAME
       setUsername(regUsername);
       setPassword('');
-      setRole(regRole);
+      setRole(regUserType === 'admin' ? 'admin' : 'user');
       setIsRegisterMode(false);
 
       // Reset reg form
@@ -76,36 +78,21 @@ export const Login = ({ onLoginSuccess }) => {
       {/* Background Subtle Gradient */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-b from-polbeng-blue/10 via-teal-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10">
-        
-        {/* Left Side: Brand Context */}
-        <div className="lg:col-span-6 space-y-6 text-left p-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-polbeng-blue text-xs font-bold shadow-xs">
-            <Wrench className="w-4 h-4 text-teal-600" />
-            <span>Politeknik Negeri Bengkalis • Teknik Mesin</span>
-          </div>
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch z-10">
 
-          <div className="space-y-2">
-            <h1 className="text-4xl sm:text-5xl font-black font-sans tracking-tight text-slate-900 leading-tight">
-              SI-BAP <span className="text-teal-600">Inventory</span>
-            </h1>
-            <p className="text-slate-600 text-sm leading-relaxed">
-              Sistem Informasi Inventaris Bahan Habis Pakai & Mata Kuliah Praktikum Laboratorium Bengkel Kerja.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center gap-3 text-xs font-medium text-slate-700">
-              <CheckCircle2 className="w-4.5 h-4.5 text-teal-600 flex-shrink-0" />
-              <span>Otomatisasi pemotongan stok saat permohonan disetujui</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs font-medium text-slate-700">
-              <CheckCircle2 className="w-4.5 h-4.5 text-teal-600 flex-shrink-0" />
-              <span>Peringatan dini batas minimum threshold stok kritis</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs font-medium text-slate-700">
-              <CheckCircle2 className="w-4.5 h-4.5 text-teal-600 flex-shrink-0" />
-              <span>Cetak otomatis laporan PDF KOP Politeknik Bengkalis & Excel</span>
+        {/* Left Side: Building Photo */}
+        <div className="hidden lg:block lg:col-span-6">
+          <div className="relative h-full min-h-[480px] rounded-3xl overflow-hidden shadow-2xl">
+            <img src={gedungImg} alt="Politeknik Negeri Bengkalis" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 p-8 space-y-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-lime-400">Selamat Datang</p>
+              <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                Sistem Informasi Inventaris BHP<br />Politeknik Negeri Bengkalis
+              </h1>
+              <p className="text-slate-200 text-xs pt-1.5">
+                Laboratorium & Bengkel Kerja • Jurusan Teknik Mesin
+              </p>
             </div>
           </div>
         </div>
@@ -113,7 +100,12 @@ export const Login = ({ onLoginSuccess }) => {
         {/* Right Side: Login & Register Card */}
         <div className="lg:col-span-6">
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-2xl space-y-6">
-            
+
+            {/* Polbeng Logo */}
+            <div className="flex flex-col items-center gap-2 -mb-1">
+              <img src={logoImg} alt="Logo Politeknik Negeri Bengkalis" className="w-16 h-16 object-contain" />
+            </div>
+
             {/* Mode Switcher Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-2xl">
               <button
@@ -142,7 +134,7 @@ export const Login = ({ onLoginSuccess }) => {
 
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                {isRegisterMode ? 'Registrasi Pengguna Baru' : 'Masuk ke Sistem SI-BAP'}
+                {isRegisterMode ? 'Registrasi Pengguna Baru' : 'Masuk ke Sistem SI-BHP'}
               </h2>
               <p className="text-xs text-slate-500">
                 {isRegisterMode
@@ -152,8 +144,9 @@ export const Login = ({ onLoginSuccess }) => {
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
-                {error}
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -206,7 +199,7 @@ export const Login = ({ onLoginSuccess }) => {
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-polbeng-blue hover:bg-slate-900 text-white font-bold text-xs transition-all shadow-md shadow-polbeng-blue/20"
                 >
-                  <span>Masuk Aplikasi SI-BAP</span>
+                  <span>Masuk Aplikasi SI-BHP</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
@@ -279,15 +272,16 @@ export const Login = ({ onLoginSuccess }) => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Pilih Peran (Role) *
+                    Daftar Sebagai *
                   </label>
                   <select
-                    value={regRole}
-                    onChange={(e) => setRegRole(e.target.value)}
+                    value={regUserType}
+                    onChange={(e) => setRegUserType(e.target.value)}
                     className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-                    <option value="user">User (Mahasiswa / Dosen / Asisten)</option>
-                    <option value="admin">Admin (Teknisi / Pengelola Lab)</option>
+                    <option value="mahasiswa">Mahasiswa</option>
+                    <option value="dosen">Dosen</option>
+                    <option value="admin">Admin / Teknisi Lab</option>
                   </select>
                 </div>
 

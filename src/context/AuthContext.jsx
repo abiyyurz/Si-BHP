@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getUsers, saveUser, initializeDB } from '../utils/storage';
+import { getUsers, saveUser, updateUserProfile, initializeDB } from '../utils/storage';
 
 const AuthContext = createContext(null);
 
@@ -58,6 +58,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('sibap_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('sibap_theme', 'light');
     }
   };
 
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }) => {
     throw new Error("Username atau role tidak ditemukan. Silakan daftarkan akun terlebih dahulu.");
   };
 
-  const registerNewAccount = ({ first_name, last_name, username, password, role }) => {
+  const registerNewAccount = ({ first_name, last_name, username, password, user_type }) => {
     const freshUsers = getUsers();
     const cleanUsername = username.trim().toLowerCase();
     const existing = freshUsers.find(u => u.username.toLowerCase() === cleanUsername);
@@ -109,17 +110,37 @@ export const AuthProvider = ({ children }) => {
       throw new Error("Username ini sudah digunakan. Silakan pilih username lain.");
     }
 
+    // mahasiswa & dosen are regular users; admin/teknisi is the admin role.
+    const role = user_type === 'admin' ? 'admin' : 'user';
     const newUser = saveUser({
       first_name,
       last_name,
       username: cleanUsername,
       password,
       role,
+      user_type,
       is_active: true
     });
 
     setUsers(getUsers());
     return newUser;
+  };
+
+  const updateProfile = (patch) => {
+    if (!currentUser) throw new Error("Tidak ada sesi aktif.");
+    const updated = updateUserProfile(currentUser.id, patch);
+    setCurrentUser(updated);
+    localStorage.setItem('sibap_auth_session', JSON.stringify(updated));
+    setUsers(getUsers());
+    return updated;
+  };
+
+  const changePassword = (oldPassword, newPassword) => {
+    if (!currentUser) throw new Error("Tidak ada sesi aktif.");
+    if (currentUser.password && currentUser.password !== oldPassword) {
+      throw new Error("Kata sandi lama yang Anda masukkan salah.");
+    }
+    return updateProfile({ password: newPassword });
   };
 
   const logout = () => {
@@ -142,6 +163,8 @@ export const AuthProvider = ({ children }) => {
         loginAsUser,
         loginWithCredentials,
         registerNewAccount,
+        updateProfile,
+        changePassword,
         logout,
         refreshUsersList,
         isAdmin: currentUser?.role === 'admin'

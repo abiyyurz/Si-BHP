@@ -60,7 +60,7 @@ export const Dashboard = ({ onNavigate }) => {
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
               {isAdmin
-                ? 'Panel Pengelolaan Inventaris Bahan Habis Pakai (BAP) Laboratorium Bengkel Kerja Polbeng. Pantau sisa stok, verifikasi permohonan bahan, dan tinjau riwayat praktikum.'
+                ? 'Panel Pengelolaan Inventaris Bahan Habis Pakai (BHP) Laboratorium Bengkel Kerja Polbeng. Pantau sisa stok, verifikasi permohonan bahan, dan tinjau riwayat praktikum.'
                 : 'Portal Permohonan Bahan Habis Pakai Praktikum Bengkel Kerja. Buat permintaan bahan praktikum dan pantau status persetujuan dari teknisi lab.'}
             </p>
           </div>
@@ -82,7 +82,7 @@ export const Dashboard = ({ onNavigate }) => {
                   size="md"
                   icon={Plus}
                 >
-                  Tambah Stok BAP
+                  Tambah Stok BHP
                 </Button>
               </>
             ) : (
@@ -129,7 +129,7 @@ export const Dashboard = ({ onNavigate }) => {
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Jenis Bahan (BAP)"
+          title="Total Jenis Bahan (BHP)"
           value={materials.length}
           unit="Item Master"
           icon={Boxes}
@@ -174,7 +174,7 @@ export const Dashboard = ({ onNavigate }) => {
                 <span>Distribusi Bahan & Pemakaian per Semester</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Visualisasi integrasi mata kuliah praktikum terhadap penggunaan material BAP.
+                Visualisasi integrasi mata kuliah praktikum terhadap penggunaan material BHP.
               </p>
             </div>
             <span className="text-xs text-slate-400 font-mono">Sem 1 - Sem 6</span>
@@ -212,7 +212,7 @@ export const Dashboard = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Layers className="w-4 h-4 text-amber-500" />
-              <span>BAP Paling Sering Digunakan</span>
+              <span>BHP Paling Sering Digunakan</span>
             </h3>
           </div>
 
@@ -244,7 +244,7 @@ export const Dashboard = ({ onNavigate }) => {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-semibold text-[10px] tracking-wider">
                 <tr>
-                  <th className="px-3 py-2.5 rounded-l-lg">Bahan BAP</th>
+                  <th className="px-3 py-2.5 rounded-l-lg">Bahan BHP</th>
                   <th className="px-3 py-2.5">Jumlah</th>
                   <th className="px-3 py-2.5">Tgl Prac</th>
                   <th className="px-3 py-2.5">Status</th>

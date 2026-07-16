@@ -4,19 +4,21 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import { Toast } from '../components/common/Toast';
 import { BookOpen, Plus, Edit, Trash2, Calendar, Clock } from 'lucide-react';
-import { getCourses, saveCourse, deleteCourse, getMaterials } from '../utils/storage';
+import { getCourses, saveCourse, deleteCourse, getMaterials, getLabs } from '../utils/storage';
 import { formatDate } from '../utils/formatters';
 
 export const Courses = () => {
   const { isAdmin } = useAuth();
   const [coursesList, setCoursesList] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [labs, setLabs] = useState([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
   const [formData, setFormData] = useState({
     course_code: '',
     course_name: '',
+    lab_id: '',
     semester: 1,
     day_of_week: 'Senin',
     start_time: '08:00',
@@ -29,6 +31,7 @@ export const Courses = () => {
   const loadData = () => {
     setCoursesList(getCourses());
     setMaterials(getMaterials());
+    setLabs(getLabs());
   };
 
   useEffect(() => {
@@ -40,6 +43,7 @@ export const Courses = () => {
     setFormData({
       course_code: '',
       course_name: '',
+      lab_id: labs[0]?.id || '',
       semester: 1,
       day_of_week: 'Senin',
       start_time: '08:00',
@@ -54,6 +58,7 @@ export const Courses = () => {
     setFormData({
       course_code: course.course_code || '',
       course_name: course.course_name,
+      lab_id: course.lab_id || '',
       semester: course.semester || 1,
       day_of_week: course.day_of_week || 'Senin',
       start_time: course.start_time || '08:00',
@@ -82,7 +87,7 @@ export const Courses = () => {
   const handleDelete = (course) => {
     const linkedCount = materials.filter(m => m.course_id === course.id).length;
     if (linkedCount > 0) {
-      setToast({ type: 'warning', message: `Tidak dapat menghapus "${course.course_name}" karena terikat pada ${linkedCount} jenis bahan BAP.` });
+      setToast({ type: 'warning', message: `Tidak dapat menghapus "${course.course_name}" karena terikat pada ${linkedCount} jenis bahan BHP.` });
       return;
     }
 
@@ -128,6 +133,7 @@ export const Courses = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {coursesList.map((course) => {
           const linkedMaterials = materials.filter(m => m.course_id === course.id);
+          const courseLab = labs.find(l => l.id === course.lab_id);
 
           return (
             <div
@@ -177,6 +183,12 @@ export const Courses = () => {
                   <span>{course.day_of_week} ({course.start_time} - {course.end_time} WIB)</span>
                 </div>
 
+                {courseLab && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-900 text-[11px] font-semibold text-violet-700 dark:text-violet-300">
+                    {courseLab.lab_name}
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
                   {course.description || 'Praktikum jurusan Teknik Mesin Polbeng.'}
                 </p>
@@ -184,7 +196,7 @@ export const Courses = () => {
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
                 <span className="font-semibold text-teal-600 dark:text-teal-400">
-                  {linkedMaterials.length} Jenis BAP Digunakan
+                  {linkedMaterials.length} Jenis BHP Digunakan
                 </span>
                 <span className="font-mono text-[11px] font-bold text-slate-600 dark:text-slate-300">
                   Sem {course.semester}
@@ -242,6 +254,22 @@ export const Courses = () => {
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Laboratorium *
+            </label>
+            <select
+              value={formData.lab_id}
+              onChange={(e) => setFormData({ ...formData, lab_id: e.target.value })}
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            >
+              {labs.length === 0 && <option value="">(Belum ada Laboratorium — tambah di menu Laboratorium)</option>}
+              {labs.map(lab => (
+                <option key={lab.id} value={lab.id}>{lab.lab_name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

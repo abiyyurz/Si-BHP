@@ -104,7 +104,7 @@ export const History = () => {
             <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3.5">Tgl Transaksi</th>
-                <th className="px-4 py-3.5">Nama Bahan BAP</th>
+                <th className="px-4 py-3.5">Nama Bahan BHP</th>
                 <th className="px-4 py-3.5 text-center">Tipe Mutasi</th>
                 <th className="px-4 py-3.5 text-center">Jumlah Vol.</th>
                 <th className="px-4 py-3.5">Petugas / System</th>

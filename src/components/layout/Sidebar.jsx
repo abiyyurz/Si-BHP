@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Boxes,
+  FlaskConical,
   BookOpen,
   FileSpreadsheet,
   AlertTriangle,
@@ -30,8 +31,14 @@ export const Sidebar = ({ currentPage, onNavigate }) => {
     },
     {
       id: 'materials',
-      label: 'Stok Bahan (BAP)',
+      label: 'Stok Bahan (BHP)',
       icon: Boxes,
+      roles: ['admin', 'user']
+    },
+    {
+      id: 'labs',
+      label: 'Laboratorium',
+      icon: FlaskConical,
       roles: ['admin', 'user']
     },
     {
@@ -115,7 +122,7 @@ export const Sidebar = ({ currentPage, onNavigate }) => {
         <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2">
           <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 text-xs font-bold">
             <UserCheck className="w-4 h-4 text-teal-500" />
-            <span>Mode Demo SI-BAP</span>
+            <span>Mode Demo SI-BHP</span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
             Sistem pra-isi dengan data Laboratorium Bengkel Kerja Polbeng.

@@ -26,3 +26,11 @@ pnpm-debug.log*
 
 # System logs
 *.log
+
+# Netlify
+.netlify
+
+# Office temp/lock files & generated letter PDFs
+~$*
+surat_dosen.pdf
+surat_mahasiswa.pdf

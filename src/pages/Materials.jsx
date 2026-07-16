@@ -19,6 +19,7 @@ import {
 import {
   getMaterials,
   getCourses,
+  getLabs,
   saveMaterial,
   deleteMaterial,
   recordIncomingStock
@@ -33,6 +34,7 @@ export const Materials = () => {
   const { isAdmin, currentUser } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [coursesList, setCoursesList] = useState([]);
+  const [labsList, setLabsList] = useState([]);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,7 +50,9 @@ export const Materials = () => {
   // Form State
   const [formData, setFormData] = useState({
     material_name: '',
+    specification: '',
     course_id: '',
+    lab_id: '',
     semester: 1,
     practical_hours: 4,
     quality: 'good',
@@ -69,6 +73,7 @@ export const Materials = () => {
     const crs = getCourses();
     setMaterials(mats);
     setCoursesList(crs);
+    setLabsList(getLabs());
   };
 
   useEffect(() => {
@@ -76,6 +81,7 @@ export const Materials = () => {
   }, []);
 
   const courseMap = new Map(coursesList.map(c => [c.id, c]));
+  const labMap = new Map(labsList.map(l => [l.id, l]));
 
   // Filtering Logic
   const filteredMaterials = materials.filter(m => {
@@ -101,7 +107,9 @@ export const Materials = () => {
     setSelectedMaterial(null);
     setFormData({
       material_name: '',
+      specification: '',
       course_id: coursesList[0]?.id || '',
+      lab_id: labsList[0]?.id || '',
       semester: 1,
       practical_hours: 4,
       quality: 'good',
@@ -116,7 +124,9 @@ export const Materials = () => {
     setSelectedMaterial(material);
     setFormData({
       material_name: material.material_name,
+      specification: material.specification || '',
       course_id: material.course_id,
+      lab_id: material.lab_id || '',
       semester: material.semester,
       practical_hours: material.practical_hours,
       quality: material.quality,
@@ -186,7 +196,7 @@ export const Materials = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-sans tracking-tight">
-              Master Data Bahan Habis Pakai (BAP)
+              Master Data Bahan Habis Pakai (BHP)
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
               {filteredMaterials.length} Items
@@ -284,8 +294,9 @@ export const Materials = () => {
             <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3.5 w-12 text-center">No</th>
-                <th className="px-4 py-3.5">Nama Bahan Habis Pakai (BAP)</th>
+                <th className="px-4 py-3.5">Nama Bahan Habis Pakai (BHP)</th>
                 <th className="px-4 py-3.5">Mata Kuliah Terkait</th>
+                <th className="px-4 py-3.5">Laboratorium</th>
                 <th className="px-4 py-3.5 text-center">Sem.</th>
                 <th className="px-4 py-3.5 text-center">Jam Prac</th>
                 <th className="px-4 py-3.5 text-center">Kualitas</th>
@@ -300,6 +311,7 @@ export const Materials = () => {
                 const isCritical = item.stock <= item.min_stock;
                 const qualityBadge = getQualityBadge(item.quality);
                 const crs = courseMap.get(item.course_id);
+                const lab = labMap.get(item.lab_id);
 
                 return (
                   <tr
@@ -332,6 +344,10 @@ export const Materials = () => {
                       ) : (
                         'Umum / Praktikum'
                       )}
+                    </td>
+
+                    <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">
+                      {lab ? lab.lab_name : '—'}
                     </td>
 
                     <td className="px-4 py-4 text-center">
@@ -405,7 +421,7 @@ export const Materials = () => {
 
               {filteredMaterials.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 10 : 9} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={isAdmin ? 11 : 10} className="py-12 text-center text-slate-500 dark:text-slate-400">
                     <Boxes className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="font-semibold">Tidak ada data bahan yang cocok dengan pencarian.</p>
                   </td>
@@ -420,13 +436,13 @@ export const Materials = () => {
       <Modal
         isOpen={isAddEditOpen}
         onClose={() => setIsAddEditOpen(false)}
-        title={selectedMaterial ? `Edit Data: ${selectedMaterial.material_name}` : 'Tambah Master Bahan (BAP) Baru'}
+        title={selectedMaterial ? `Edit Data: ${selectedMaterial.material_name}` : 'Tambah Master Bahan (BHP) Baru'}
         maxWidth="max-w-xl"
       >
         <form onSubmit={handleSaveMaterial} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Nama Bahan Habis Pakai (BAP) *
+              Nama Bahan Habis Pakai (BHP) *
             </label>
             <input
               type="text"
@@ -436,6 +452,36 @@ export const Materials = () => {
               required
               className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Spesifikasi
+            </label>
+            <input
+              type="text"
+              value={formData.specification}
+              onChange={(e) => setFormData({ ...formData, specification: e.target.value })}
+              placeholder="Contoh: Baja HSS, panjang 25 cm, grade halus"
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Ditampilkan pada kolom Spesifikasi di surat permohonan.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Laboratorium *
+            </label>
+            <select
+              value={formData.lab_id}
+              onChange={(e) => setFormData({ ...formData, lab_id: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            >
+              {labsList.length === 0 && <option value="">(Belum ada Laboratorium — tambah di menu Laboratorium)</option>}
+              {labsList.map(lab => (
+                <option key={lab.id} value={lab.id}>{lab.lab_name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

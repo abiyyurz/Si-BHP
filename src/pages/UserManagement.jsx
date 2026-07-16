@@ -11,11 +11,8 @@ export const UserManagement = () => {
   const { refreshUsersList, currentUser } = useAuth();
   const [usersList, setUsersList] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'user'
-  });
+  const emptyForm = { name: '', username: '', password: '', email: '', user_type: 'mahasiswa' };
+  const [formData, setFormData] = useState(emptyForm);
 
   const [toast, setToast] = useState(null);
 
@@ -32,11 +29,19 @@ export const UserManagement = () => {
   const handleCreateUser = (e) => {
     e.preventDefault();
     try {
-      if (!formData.name.trim() || !formData.email.trim()) throw new Error("Nama dan email wajib diisi.");
-      saveUser(formData);
+      if (!formData.name.trim() || !formData.username.trim() || !formData.password.trim()) {
+        throw new Error("Nama, username, dan password wajib diisi.");
+      }
+      const cleanUsername = formData.username.trim().toLowerCase();
+      if (getUsers().some(u => u.username?.toLowerCase() === cleanUsername)) {
+        throw new Error("Username ini sudah digunakan. Pilih username lain.");
+      }
+      // mahasiswa & dosen -> role user; admin/teknisi -> role admin
+      const role = formData.user_type === 'admin' ? 'admin' : 'user';
+      saveUser({ ...formData, username: cleanUsername, role });
       setToast({ type: 'success', message: `Pengguna baru "${formData.name}" berhasil ditambahkan.` });
       setIsModalOpen(false);
-      setFormData({ name: '', email: '', role: 'user' });
+      setFormData(emptyForm);
       loadData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
@@ -89,8 +94,8 @@ export const UserManagement = () => {
             <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3.5">Nama Pengguna</th>
-                <th className="px-4 py-3.5">Email Polbeng</th>
-                <th className="px-4 py-3.5 text-center">Peran (Role)</th>
+                <th className="px-4 py-3.5">Username</th>
+                <th className="px-4 py-3.5 text-center">Tipe / Peran</th>
                 <th className="px-4 py-3.5 text-center">Tgl Registrasi</th>
                 <th className="px-4 py-3.5 text-center">Status Akun</th>
                 <th className="px-4 py-3.5 text-right">Aksi</th>
@@ -109,7 +114,7 @@ export const UserManagement = () => {
                   </td>
 
                   <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-mono">
-                    {usr.email}
+                    {usr.username || '—'}
                   </td>
 
                   <td className="px-4 py-4 text-center">
@@ -118,7 +123,7 @@ export const UserManagement = () => {
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'
                         : 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300'
                     }`}>
-                      {usr.role}
+                      {usr.user_type || usr.role}
                     </span>
                   </td>
 
@@ -158,7 +163,7 @@ export const UserManagement = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Registrasi Pengguna Baru SI-BAP"
+        title="Registrasi Pengguna Baru SI-BHP"
         maxWidth="max-w-md"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
@@ -176,31 +181,60 @@ export const UserManagement = () => {
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Username *
+              </label>
+              <input
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder="mrafli"
+                required
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Password *
+              </label>
+              <input
+                type="text"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Min. 6 karakter"
+                required
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Alamat Email Kampus *
+              Alamat Email Kampus (opsional)
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="nama@polbeng.ac.id"
-              required
               className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Peran Access Control (Role) *
+              Daftar Sebagai *
             </label>
             <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              value={formData.user_type}
+              onChange={(e) => setFormData({ ...formData, user_type: e.target.value })}
               className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
             >
-              <option value="user">User (Mahasiswa / Dosen / TA)</option>
-              <option value="admin">Admin (Teknisi / Kepala Lab)</option>
+              <option value="mahasiswa">Mahasiswa</option>
+              <option value="dosen">Dosen</option>
+              <option value="admin">Admin / Teknisi Lab</option>
             </select>
           </div>
 

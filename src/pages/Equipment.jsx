@@ -62,7 +62,7 @@ export const Equipment = () => {
     // Check if equipment is linked to materials
     const linkedCount = materials.filter(m => m.equipment_id === eq.id).length;
     if (linkedCount > 0) {
-      setToast({ type: 'warning', message: `Tidak dapat menghapus "${eq.equipment_name}" karena terikat pada ${linkedCount} jenis bahan BAP.` });
+      setToast({ type: 'warning', message: `Tidak dapat menghapus "${eq.equipment_name}" karena terikat pada ${linkedCount} jenis bahan BHP.` });
       return;
     }
 
@@ -151,7 +151,7 @@ export const Equipment = () => {
 
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
                 <span className="font-semibold text-teal-600 dark:text-teal-400">
-                  {linkedMaterials.length} Jenis BAP Terkait
+                  {linkedMaterials.length} Jenis BHP Terkait
                 </span>
                 <span className="flex items-center gap-1 font-mono text-[11px]">
                   <Calendar className="w-3.5 h-3.5" />

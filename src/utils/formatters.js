@@ -1,5 +1,5 @@
 /**
- * Utility formatters for SI-BAP application
+ * Utility formatters for SI-BHP application
  */
 
 export const formatDate = (dateString) => {
@@ -51,6 +51,8 @@ export const getRequestStatusBadge = (status) => {
       return { label: 'Disetujui', bg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800' };
     case 'rejected':
       return { label: 'Ditolak', bg: 'bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border-rose-300 dark:border-rose-800' };
+    case 'cancelled':
+      return { label: 'Dibatalkan', bg: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600' };
     case 'pending':
     default:
       return { label: 'Menunggu Approval', bg: 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-300 dark:border-amber-800 animate-pulse' };

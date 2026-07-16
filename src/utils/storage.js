@@ -1,4 +1,5 @@
 import {
+  initialLabs,
   initialCourses,
   initialMaterials,
   initialUsers,
@@ -7,6 +8,7 @@ import {
 } from '../data/initialSeedData';
 
 const KEYS = {
+  LABS: 'sibap_labs_v2',
   COURSES: 'sibap_courses_v2',
   MATERIALS: 'sibap_materials_v2',
   USERS: 'sibap_users_v2',
@@ -37,6 +39,9 @@ const setItem = (key, data) => {
 };
 
 export const initializeDB = () => {
+  // Seed the 13 labs on first run, and also backfill if the labs list is still empty.
+  const existingLabs = localStorage.getItem(KEYS.LABS);
+  if (!existingLabs || JSON.parse(existingLabs).length === 0) setItem(KEYS.LABS, initialLabs);
   if (!localStorage.getItem(KEYS.COURSES)) setItem(KEYS.COURSES, initialCourses);
   if (!localStorage.getItem(KEYS.MATERIALS)) setItem(KEYS.MATERIALS, initialMaterials);
   if (!localStorage.getItem(KEYS.USERS)) setItem(KEYS.USERS, initialUsers);
@@ -45,12 +50,41 @@ export const initializeDB = () => {
 };
 
 export const resetDBToDefault = () => {
+  setItem(KEYS.LABS, initialLabs);
   setItem(KEYS.COURSES, initialCourses);
   setItem(KEYS.MATERIALS, initialMaterials);
   setItem(KEYS.USERS, initialUsers);
   setItem(KEYS.TRANSACTIONS, initialTransactions);
   setItem(KEYS.REQUESTS, initialRequests);
   window.location.reload();
+};
+
+// LABORATORIUM SERVICES
+export const getLabs = () => getItem(KEYS.LABS, initialLabs);
+
+export const saveLab = (labData) => {
+  const list = getLabs();
+  if (!labData.lab_name?.trim()) throw new Error("Nama laboratorium wajib diisi.");
+  if (!labData.head_name?.trim()) throw new Error("Nama kepala lab wajib diisi.");
+
+  if (labData.id) {
+    const updated = list.map(item => item.id === labData.id ? { ...item, ...labData } : item);
+    setItem(KEYS.LABS, updated);
+    return labData;
+  } else {
+    const newItem = {
+      ...labData,
+      id: `lab-${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+    setItem(KEYS.LABS, [...list, newItem]);
+    return newItem;
+  }
+};
+
+export const deleteLab = (id) => {
+  const list = getLabs();
+  setItem(KEYS.LABS, list.filter(item => item.id !== id));
 };
 
 // MATA KULIAH TERKAIT (PRACTICAL COURSES) SERVICES
@@ -289,28 +323,119 @@ export const rejectUsageRequest = ({ requestId, adminId, adminNote }) => {
   return { success: true };
 };
 
+// Writes a note-only entry into the immutable ledger (records who did what & why).
+const recordAuditEntry = ({ material_id, quantity = 0, type = 'adjustment', recorded_by, note }) => {
+  const transactions = getTransactions();
+  setItem(KEYS.TRANSACTIONS, [{
+    id: `tx-${Date.now()}`,
+    material_id,
+    type,
+    quantity,
+    date: new Date().toISOString().split('T')[0],
+    recorded_by,
+    note,
+    created_at: new Date().toISOString()
+  }, ...transactions]);
+};
+
+// Hard-delete a request that never touched stock (pending / rejected). Logged to the ledger.
+export const deleteUsageRequest = ({ requestId, adminId, reason }) => {
+  if (!reason?.trim()) throw new Error("Alasan penghapusan wajib diisi.");
+  const requests = getRequests();
+  const req = requests.find(r => r.id === requestId);
+  if (!req) throw new Error("Permohonan tidak ditemukan.");
+  if (req.status === 'approved') {
+    throw new Error("Permohonan yang sudah disetujui tidak boleh dihapus. Gunakan 'Batalkan' agar stok dikembalikan.");
+  }
+
+  setItem(KEYS.REQUESTS, requests.filter(r => r.id !== requestId));
+
+  const mat = getMaterials().find(m => m.id === req.material_id);
+  recordAuditEntry({
+    material_id: req.material_id,
+    quantity: 0,
+    type: 'adjustment',
+    recorded_by: adminId,
+    note: `Permohonan (${req.status}) ${req.quantity} ${mat?.unit || ''} dihapus oleh admin. Alasan: ${reason.trim()}`
+  });
+  return { success: true };
+};
+
+// Cancel an APPROVED request: return the stock and record a reversal in the ledger. Soft-marks the request.
+export const cancelApprovedRequest = ({ requestId, adminId, reason }) => {
+  if (!reason?.trim()) throw new Error("Alasan pembatalan wajib diisi.");
+  const requests = getRequests();
+  const req = requests.find(r => r.id === requestId);
+  if (!req) throw new Error("Permohonan tidak ditemukan.");
+  if (req.status !== 'approved') throw new Error("Hanya permohonan berstatus Disetujui yang dapat dibatalkan.");
+
+  const materials = getMaterials();
+  const mat = materials.find(m => m.id === req.material_id);
+  const updatedMaterials = materials.map(m =>
+    m.id === req.material_id ? { ...m, stock: m.stock + req.quantity, updated_at: new Date().toISOString() } : m
+  );
+  setItem(KEYS.MATERIALS, updatedMaterials);
+
+  recordAuditEntry({
+    material_id: req.material_id,
+    quantity: req.quantity,
+    type: 'in',
+    recorded_by: adminId,
+    note: `Pembatalan permohonan disetujui — pengembalian stok ${req.quantity} ${mat?.unit || ''}. Alasan: ${reason.trim()}`
+  });
+
+  setItem(KEYS.REQUESTS, requests.map(r =>
+    r.id === requestId ? { ...r, status: 'cancelled', admin_note: `Dibatalkan: ${reason.trim()}`, processed_by: adminId } : r
+  ));
+  return { success: true };
+};
+
 // USER MANAGEMENT SERVICES (USERNAME BASED)
 export const getUsers = () => getItem(KEYS.USERS, initialUsers);
 
 export const saveUser = (userData) => {
   const users = getUsers();
-  const fullName = `${userData.first_name} ${userData.last_name}`.trim();
+  // Only derive name from first/last when those parts are supplied (registration);
+  // admin-created users pass `name` directly and must not be overwritten.
+  const hasParts = userData.first_name !== undefined || userData.last_name !== undefined;
+  const derivedName = hasParts
+    ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
+    : (userData.name || '');
 
   if (userData.id) {
-    const updated = users.map(u => u.id === userData.id ? { ...u, ...userData, name: fullName } : u);
+    const updated = users.map(u => u.id === userData.id ? { ...u, ...userData, name: derivedName || u.name } : u);
     setItem(KEYS.USERS, updated);
     return userData;
   } else {
     const newUser = {
       ...userData,
       id: `usr-${Date.now()}`,
-      name: fullName,
+      name: derivedName || userData.name || 'Pengguna',
       is_active: true,
       created_at: new Date().toISOString()
     };
     setItem(KEYS.USERS, [...users, newUser]);
     return newUser;
   }
+};
+
+export const updateUserProfile = (userId, patch) => {
+  const users = getUsers();
+  let updatedUser = null;
+  const updated = users.map(u => {
+    if (u.id === userId) {
+      const merged = { ...u, ...patch };
+      if (patch.first_name !== undefined || patch.last_name !== undefined) {
+        merged.name = `${merged.first_name || ''} ${merged.last_name || ''}`.trim() || merged.name;
+      }
+      updatedUser = merged;
+      return merged;
+    }
+    return u;
+  });
+  if (!updatedUser) throw new Error("Pengguna tidak ditemukan.");
+  setItem(KEYS.USERS, updated);
+  return updatedUser;
 };
 
 export const toggleUserStatus = (userId) => {

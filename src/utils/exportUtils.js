@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { formatDate, formatDateTime } from './formatters';
 
 /**
- * PDF Export for Consumable Materials (BAP) Inventory
+ * PDF Export for Consumable Materials (BHP) Inventory
  */
 export const exportMaterialsPDF = (materials = [], coursesList = []) => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -19,7 +19,7 @@ export const exportMaterialsPDF = (materials = [], coursesList = []) => {
   doc.text('LABORATORIUM BENGKEL KERJA - JURUSAN TEKNIK MESIN', 14, 22);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('LAPORAN INVENTARIS BAHAN HABIS PAKAI (SI-BAP)', 14, 30);
+  doc.text('LAPORAN INVENTARIS BAHAN HABIS PAKAI (SI-BHP)', 14, 30);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
@@ -42,7 +42,7 @@ export const exportMaterialsPDF = (materials = [], coursesList = []) => {
 
   doc.autoTable({
     startY: 40,
-    head: [['No', 'Nama Bahan Habis Pakai (BAP)', 'Mata Kuliah Terkait & Jadwal', 'Semester', 'Jam Prac', 'Kualitas', 'Sisa Stok', 'Batas Min', 'Status Stok']],
+    head: [['No', 'Nama Bahan Habis Pakai (BHP)', 'Mata Kuliah Terkait & Jadwal', 'Semester', 'Jam Prac', 'Kualitas', 'Sisa Stok', 'Batas Min', 'Status Stok']],
     body: tableData,
     theme: 'grid',
     headStyles: { fillColor: [15, 44, 89], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -69,19 +69,9 @@ export const exportMaterialsPDF = (materials = [], coursesList = []) => {
     }
   });
 
-  // Footer & Signatures
-  const finalY = doc.lastAutoTable.finalY + 10;
-  if (finalY < 170) {
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Bengkalis, ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 220, finalY);
-    doc.text('Kepala Laboratorium Bengkel Kerja', 220, finalY + 5);
-    doc.text('Abiyyu RZ, S.T., M.T.', 220, finalY + 25);
-    doc.text('NIP. 19910515 202601 1 002', 220, finalY + 30);
-  }
-
-  doc.save(`SI-BAP_Inventaris_Bahan_${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`SI-BHP_Inventaris_Bahan_${new Date().toISOString().split('T')[0]}.pdf`);
 };
+
 
 /**
  * Excel Export for Consumable Materials
@@ -105,8 +95,8 @@ export const exportMaterialsExcel = (materials = [], coursesList = []) => {
 
   const worksheet = XLSX.utils.json_to_sheet(excelData);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Master BAP');
-  XLSX.writeFile(workbook, `SI-BAP_Inventaris_Bahan_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Master BHP');
+  XLSX.writeFile(workbook, `SI-BHP_Inventaris_Bahan_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
 /**
@@ -122,7 +112,7 @@ export const exportHistoryPDF = (transactions = [], materials = [], users = []) 
   doc.text('POLITEKNIK NEGERI BENGKALIS', 14, 15);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
-  doc.text('RIWAYAT MUTASI & PENGGUNAAN BAHAN HABIS PAKAI (BAP)', 14, 22);
+  doc.text('RIWAYAT MUTASI & PENGGUNAAN BAHAN HABIS PAKAI (BHP)', 14, 22);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
@@ -161,7 +151,7 @@ export const exportHistoryPDF = (transactions = [], materials = [], users = []) 
     }
   });
 
-  doc.save(`SI-BAP_Riwayat_Mutasi_${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`SI-BHP_Riwayat_Mutasi_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
 /**
@@ -176,7 +166,7 @@ export const exportHistoryExcel = (transactions = [], materials = [], users = []
     return {
       'No': idx + 1,
       'Tanggal Transaksi': tx.date,
-      'Nama Bahan BAP': mat ? mat.material_name : 'N/A',
+      'Nama Bahan BHP': mat ? mat.material_name : 'N/A',
       'Tipe Transaksi': tx.type === 'in' ? 'Stok Masuk' : tx.type === 'out' ? 'Stok Keluar (Pemakaian)' : 'Penyesuaian',
       'Jumlah': tx.quantity,
       'Satuan': mat ? mat.unit : '',
@@ -187,6 +177,6 @@ export const exportHistoryExcel = (transactions = [], materials = [], users = []
 
   const worksheet = XLSX.utils.json_to_sheet(excelData);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Riwayat Mutasi BAP');
-  XLSX.writeFile(workbook, `SI-BAP_Riwayat_Mutasi_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Riwayat Mutasi BHP');
+  XLSX.writeFile(workbook, `SI-BHP_Riwayat_Mutasi_${new Date().toISOString().split('T')[0]}.xlsx`);
 };

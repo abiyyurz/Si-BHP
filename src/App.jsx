@@ -6,6 +6,7 @@ import { Footer } from './components/layout/Footer';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Materials } from './pages/Materials';
+import { Labs } from './pages/Labs';
 import { Courses } from './pages/Courses';
 import { UsageRequests } from './pages/UsageRequests';
 import { LowStock } from './pages/LowStock';
@@ -21,7 +22,7 @@ const AppContent = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center text-white">
         <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-xs font-mono text-slate-400">Memuat SI-BAP Polbeng...</p>
+        <p className="mt-4 text-xs font-mono text-slate-400">Memuat SI-BHP Polbeng...</p>
       </div>
     );
   }
@@ -36,6 +37,8 @@ const AppContent = () => {
         return <Dashboard onNavigate={setCurrentPage} />;
       case 'materials':
         return <Materials />;
+      case 'labs':
+        return <Labs />;
       case 'courses':
         return <Courses />;
       case 'requests':

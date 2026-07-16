@@ -9,17 +9,24 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  Printer,
+  Trash2,
+  Ban
 } from 'lucide-react';
 import {
   getRequests,
   getMaterials,
   getCourses,
+  getLabs,
   getUsers,
   createUsageRequest,
   approveUsageRequest,
-  rejectUsageRequest
+  rejectUsageRequest,
+  deleteUsageRequest,
+  cancelApprovedRequest
 } from '../utils/storage';
+import { openLetterPreview } from '../utils/letter';
 import { formatDate, getRequestStatusBadge } from '../utils/formatters';
 
 export const UsageRequests = () => {
@@ -27,7 +34,21 @@ export const UsageRequests = () => {
   const [requests, setRequests] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [coursesList, setCoursesList] = useState([]);
+  const [labsList, setLabsList] = useState([]);
   const [users, setUsers] = useState([]);
+
+  // Print letter state
+  const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [printReq, setPrintReq] = useState(null);
+  const [printData, setPrintData] = useState({
+    name: '', type: 'mahasiswa', nim: '', kelas: '', nip: '', lab_id: ''
+  });
+
+  // Delete / Cancel (with reason) state
+  const [isReasonOpen, setIsReasonOpen] = useState(false);
+  const [reasonAction, setReasonAction] = useState('delete'); // 'delete' | 'cancel'
+  const [reasonReq, setReasonReq] = useState(null);
+  const [reasonText, setReasonText] = useState('');
 
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -55,6 +76,7 @@ export const UsageRequests = () => {
     setRequests(reqs);
     setMaterials(mats);
     setCoursesList(crs);
+    setLabsList(getLabs());
     setUsers(usrs);
 
     if (mats.length > 0 && !formData.material_id) {
@@ -136,6 +158,68 @@ export const UsageRequests = () => {
     }
   };
 
+  const handleOpenPrint = (req) => {
+    const mat = matMap.get(req.material_id);
+    setPrintReq(req);
+    const reqUser = users.find(u => u.id === req.user_id);
+    setPrintData({
+      name: userMap.get(req.user_id) || '',
+      type: reqUser?.user_type === 'dosen' ? 'dosen' : 'mahasiswa',
+      nim: '',
+      kelas: '',
+      nip: '',
+      lab_id: mat?.lab_id || labsList[0]?.id || ''
+    });
+    setIsPrintOpen(true);
+  };
+
+  const handlePrintSubmit = (e) => {
+    e.preventDefault();
+    if (!printData.name.trim()) {
+      setToast({ type: 'error', message: 'Nama pemohon wajib diisi.' });
+      return;
+    }
+    const mat = matMap.get(printReq.material_id);
+    const course = courseMap.get(printReq.course_id || mat?.course_id);
+    const lab = labsList.find(l => l.id === printData.lab_id);
+    if (!lab) {
+      setToast({ type: 'error', message: 'Pilih laboratorium untuk penanda tangan surat terlebih dahulu.' });
+      return;
+    }
+    openLetterPreview({
+      request: printReq,
+      material: mat,
+      course,
+      lab,
+      applicant: printData
+    });
+    setIsPrintOpen(false);
+  };
+
+  const handleOpenReason = (req, action) => {
+    setReasonReq(req);
+    setReasonAction(action);
+    setReasonText('');
+    setIsReasonOpen(true);
+  };
+
+  const handleReasonSubmit = (e) => {
+    e.preventDefault();
+    try {
+      if (reasonAction === 'cancel') {
+        cancelApprovedRequest({ requestId: reasonReq.id, adminId: currentUser.id, reason: reasonText });
+        setToast({ type: 'info', message: 'Permohonan dibatalkan & stok dikembalikan. Tercatat di Riwayat Audit.' });
+      } else {
+        deleteUsageRequest({ requestId: reasonReq.id, adminId: currentUser.id, reason: reasonText });
+        setToast({ type: 'info', message: 'Permohonan dihapus. Tercatat di Riwayat Audit.' });
+      }
+      setIsReasonOpen(false);
+      loadData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -173,7 +257,7 @@ export const UsageRequests = () => {
               <tr>
                 <th className="px-4 py-3.5">Tgl Pengajuan</th>
                 <th className="px-4 py-3.5">Pemohon</th>
-                <th className="px-4 py-3.5">Bahan Habis Pakai (BAP)</th>
+                <th className="px-4 py-3.5">Bahan Habis Pakai (BHP)</th>
                 <th className="px-4 py-3.5 text-center">Jumlah</th>
                 <th className="px-4 py-3.5 text-center">Sisa Stok Available</th>
                 <th className="px-4 py-3.5 text-center">Sem. / Jam</th>
@@ -235,11 +319,20 @@ export const UsageRequests = () => {
                           "{req.admin_note}"
                         </p>
                       )}
+                      {req.status === 'approved' && (
+                        <button
+                          onClick={() => handleOpenPrint(req)}
+                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-polbeng-blue dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors"
+                        >
+                          <Printer className="w-3 h-3" />
+                          Cetak Surat
+                        </button>
+                      )}
                     </td>
 
                     {isAdmin && (
                       <td className="px-4 py-4 text-right">
-                        {req.status === 'pending' ? (
+                        {req.status === 'pending' && (
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
                               onClick={() => handleOpenProcess(req, 'approve')}
@@ -257,11 +350,37 @@ export const UsageRequests = () => {
                             >
                               Tolak
                             </Button>
+                            <button
+                              onClick={() => handleOpenReason(req, 'delete')}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+                              title="Hapus permohonan"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-mono">
-                            Selesai diproses
-                          </span>
+                        )}
+                        {req.status === 'rejected' && (
+                          <button
+                            onClick={() => handleOpenReason(req, 'delete')}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+                            title="Hapus permohonan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Hapus
+                          </button>
+                        )}
+                        {req.status === 'approved' && (
+                          <Button
+                            onClick={() => handleOpenReason(req, 'cancel')}
+                            variant="danger"
+                            size="sm"
+                            icon={Ban}
+                          >
+                            Batalkan
+                          </Button>
+                        )}
+                        {req.status === 'cancelled' && (
+                          <span className="text-[11px] text-slate-400 font-mono">Dibatalkan</span>
                         )}
                       </td>
                     )}
@@ -292,7 +411,7 @@ export const UsageRequests = () => {
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Pilih Bahan Habis Pakai (BAP) *
+              Pilih Bahan Habis Pakai (BHP) *
             </label>
             <select
               value={formData.material_id}
@@ -442,6 +561,136 @@ export const UsageRequests = () => {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* Delete / Cancel with Reason Modal */}
+      <Modal
+        isOpen={isReasonOpen}
+        onClose={() => setIsReasonOpen(false)}
+        title={reasonAction === 'cancel' ? 'Batalkan Permohonan Disetujui' : 'Hapus Permohonan'}
+        maxWidth="max-w-md"
+      >
+        {reasonReq && (
+          <form onSubmit={handleReasonSubmit} className="space-y-4">
+            <div className={`p-3 rounded-xl text-xs border ${reasonAction === 'cancel' ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200' : 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200'}`}>
+              {reasonAction === 'cancel'
+                ? `Stok ${matMap.get(reasonReq.material_id)?.material_name || ''} sebanyak ${reasonReq.quantity} ${matMap.get(reasonReq.material_id)?.unit || ''} akan DIKEMBALIKAN, dan pembatalan ini dicatat permanen di Riwayat Audit.`
+                : 'Permohonan akan dihapus. Tindakan ini dicatat di Riwayat Audit (siapa & alasannya).'}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Alasan {reasonAction === 'cancel' ? 'Pembatalan' : 'Penghapusan'} *
+              </label>
+              <textarea
+                rows={2}
+                value={reasonText}
+                onChange={(e) => setReasonText(e.target.value)}
+                required
+                placeholder="Contoh: salah input / duplikat / permintaan dibatalkan pemohon"
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              ></textarea>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <Button type="button" onClick={() => setIsReasonOpen(false)} variant="outline" size="sm">Batal</Button>
+              <Button type="submit" variant="danger" size="sm" icon={reasonAction === 'cancel' ? Ban : Trash2}>
+                {reasonAction === 'cancel' ? 'Batalkan & Kembalikan Stok' : 'Hapus Permohonan'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Print Letter Modal */}
+      <Modal
+        isOpen={isPrintOpen}
+        onClose={() => setIsPrintOpen(false)}
+        title="Cetak Surat Persetujuan Bahan Habis Pakai"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handlePrintSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Nama Pemohon *
+            </label>
+            <input
+              type="text"
+              value={printData.name}
+              onChange={(e) => setPrintData({ ...printData, name: e.target.value })}
+              required
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Status Pemohon *
+            </label>
+            <select
+              value={printData.type}
+              onChange={(e) => setPrintData({ ...printData, type: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            >
+              <option value="mahasiswa">Mahasiswa</option>
+              <option value="dosen">Dosen</option>
+            </select>
+          </div>
+
+          {printData.type === 'mahasiswa' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  NIM *
+                </label>
+                <input
+                  type="text"
+                  value={printData.nim}
+                  onChange={(e) => setPrintData({ ...printData, nim: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Kelas *
+                </label>
+                <input
+                  type="text"
+                  value={printData.kelas}
+                  onChange={(e) => setPrintData({ ...printData, kelas: e.target.value })}
+                  required
+                  placeholder="Contoh: 2A TM"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              {printData.type === 'dosen' ? 'Masuk di Laboratorium *' : 'Laboratorium (Penanda Tangan Surat) *'}
+            </label>
+            <select
+              value={printData.lab_id}
+              onChange={(e) => setPrintData({ ...printData, lab_id: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            >
+              {labsList.length === 0 && <option value="">(Belum ada Laboratorium)</option>}
+              {labsList.map(lab => (
+                <option key={lab.id} value={lab.id}>{lab.lab_name} — {lab.head_name}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Nama & NIP kepala lab pada tanda tangan surat mengikuti laboratorium yang dipilih.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" onClick={() => setIsPrintOpen(false)} variant="outline" size="sm">Batal</Button>
+            <Button type="submit" variant="primary" size="sm" icon={Printer}>Tampilkan Preview Surat</Button>
+          </div>
+        </form>
       </Modal>
 
       <Toast toast={toast} onClose={() => setToast(null)} />

@@ -21,6 +21,7 @@ import { SemesterUsageChart } from '../components/charts/SemesterUsageChart';
 import { StockStatusChart } from '../components/charts/StockStatusChart';
 import { TopMaterialsChart } from '../components/charts/TopMaterialsChart';
 import { formatDate, getRequestStatusBadge } from '../utils/formatters';
+import welcomeBg from '../assets/welcome.jpeg';
 
 export const Dashboard = ({ onNavigate }) => {
   const { currentUser, isAdmin } = useAuth();
@@ -52,7 +53,10 @@ export const Dashboard = ({ onNavigate }) => {
     <div className="space-y-6">
       
       {/* Welcome Banner */}
-      <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-polbeng-navy via-slate-900 to-polbeng-blue text-white overflow-hidden shadow-xl border border-slate-800">
+      <div
+        className="relative p-6 sm:p-8 rounded-3xl bg-cover bg-center text-white overflow-hidden shadow-xl border border-slate-800"
+        style={{ backgroundImage: `url(${welcomeBg})` }}
+      >
         <div className="absolute top-0 right-0 -mt-6 -mr-6 w-60 h-60 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">

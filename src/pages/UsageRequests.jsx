@@ -444,7 +444,7 @@ export const UsageRequests = () => {
                 type="number"
                 min="1"
                 value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value === '' ? '' : Number(e.target.value) })}
                 required
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
               />
@@ -488,7 +488,7 @@ export const UsageRequests = () => {
                 type="number"
                 min="1"
                 value={formData.practical_hours}
-                onChange={(e) => setFormData({ ...formData, practical_hours: Number(e.target.value) })}
+                onChange={(e) => setFormData({ ...formData, practical_hours: e.target.value === '' ? '' : Number(e.target.value) })}
                 required
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
               />

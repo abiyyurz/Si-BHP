@@ -57,6 +57,8 @@ Nama-Laboratorium; TTD kiri Pemohon (Mahasiswa+NIM / Dosen tanpa NIP), TTD kanan
 
 ## Riwayat Update
 
+- 2026-07-17: Banner selamat datang Dashboard kini pakai foto `welcome.jpeg` sebagai background (di-copy ke `src/assets/`, di-import), dengan overlay gradient navy→blue agar teks tetap terbaca. Bug input angka form permohonan diperbaiki: menghapus isi kolom Jumlah/Durasi tak lagi "nyangkut" di 0 — onChange kini membolehkan string kosong (`'' `) alih-alih memaksa `Number('')=0`; `required`+`min=1` tetap mencegah submit kosong.
+
 - 2026-07-17: **VERIFIKASI E2E MENYELURUH LULUS** (24 cek, 0 gagal, 0 console error) — login/error/expiry sesi/ingat-saya, semua halaman utama, kelola pengguna (buat-duplikat-nonaktif-hapus), mobile hamburger, + smoke test situs live. Resep verifikasi disimpan di `.claude/skills/verify/SKILL.md` (raw CDP tanpa dependency, npm registry sering timeout). Siap dipakai klien; catatan: password admin masih admin123 — disarankan user menggantinya.
 
 - 2026-07-17: Foto login diganti ke gedung1 (foto udara Jurusan TM) — dikompres dari PNG 11 MB ke JPG 306 KB (1600px, q72) demi kecepatan loading.

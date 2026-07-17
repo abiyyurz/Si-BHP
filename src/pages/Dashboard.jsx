@@ -65,13 +65,8 @@ export const Dashboard = ({ onNavigate }) => {
               <span>Praktikum Semester Ganjil TA 2026/2027</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black font-sans tracking-tight">
-              Selamat datang kembali, {currentUser?.name}!
+              Halo, {currentUser?.name}
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              {isAdmin
-                ? 'Panel Pengelolaan Inventaris Bahan Habis Pakai (BHP) Laboratorium Bengkel Kerja Polbeng. Pantau sisa stok, verifikasi permohonan bahan, dan tinjau riwayat praktikum.'
-                : 'Portal Permohonan Bahan Habis Pakai Praktikum Bengkel Kerja. Buat permintaan bahan praktikum dan pantau status persetujuan dari teknisi lab.'}
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

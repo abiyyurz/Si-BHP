@@ -5,6 +5,10 @@ import { verifyPassword, isHashed } from '../utils/password';
 
 const AuthContext = createContext(null);
 
+const SESSION_KEY = 'sibap_auth_session';
+// Tanpa "Ingat saya": sesi hangus jika web ditinggalkan lebih dari 5 menit
+const IDLE_LIMIT_MS = 5 * 60 * 1000;
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
@@ -13,18 +17,22 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const init = async () => {
       // Session check: ambil ulang data user dari database agar selalu segar
-      const savedUser = localStorage.getItem('sibap_auth_session');
+      const savedUser = localStorage.getItem(SESSION_KEY);
       if (savedUser) {
         try {
           const parsed = JSON.parse(savedUser);
+          // Sesi tanpa "Ingat saya" kedaluwarsa setelah web ditinggalkan 5 menit
+          if (!parsed.remember && Date.now() - (parsed.lastSeen || 0) > IDLE_LIMIT_MS) {
+            throw new Error('session expired');
+          }
           const { data } = await supabase.from('users').select('*').eq('id', parsed.id).single();
           if (data && data.is_active) {
             setCurrentUser(data);
           } else {
-            localStorage.removeItem('sibap_auth_session');
+            localStorage.removeItem(SESSION_KEY);
           }
         } catch (e) {
-          localStorage.removeItem('sibap_auth_session');
+          localStorage.removeItem(SESSION_KEY);
         }
       }
 
@@ -39,6 +47,30 @@ export const AuthProvider = ({ children }) => {
     init();
   }, []);
 
+  // Selama web terbuka, perbarui stempel "terakhir terlihat" pada sesi
+  // non-"Ingat saya" — jadi hitungan 5 menit dimulai saat web ditinggalkan.
+  useEffect(() => {
+    if (!currentUser) return;
+    const touch = () => {
+      try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.remember) return;
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ ...s, lastSeen: Date.now() }));
+      } catch (e) { /* abaikan */ }
+    };
+    touch();
+    const iv = setInterval(touch, 30 * 1000);
+    window.addEventListener('beforeunload', touch);
+    document.addEventListener('visibilitychange', touch);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener('beforeunload', touch);
+      document.removeEventListener('visibilitychange', touch);
+    };
+  }, [currentUser]);
+
   const toggleDarkMode = () => {
     const nextDark = !darkMode;
     setDarkMode(nextDark);
@@ -46,7 +78,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('sibap_theme', nextDark ? 'dark' : 'light');
   };
 
-  const loginWithCredentials = async (username, password) => {
+  const loginWithCredentials = async (username, password, rememberMe = false) => {
     const cleanUsername = username.trim().toLowerCase();
     const { data: matched, error } = await supabase
       .from('users').select('*').eq('username', cleanUsername).single();
@@ -67,7 +99,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     setCurrentUser(matched);
-    localStorage.setItem('sibap_auth_session', JSON.stringify({ id: matched.id }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      id: matched.id,
+      remember: !!rememberMe,
+      lastSeen: Date.now()
+    }));
     return matched;
   };
 
@@ -123,7 +159,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('sibap_auth_session');
+    localStorage.removeItem(SESSION_KEY);
   };
 
   return (

@@ -13,6 +13,7 @@ export const Login = ({ onLoginSuccess }) => {
   // Login States
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -36,7 +37,7 @@ export const Login = ({ onLoginSuccess }) => {
     setError('');
     setSubmitting(true);
     try {
-      await loginWithCredentials(username, password);
+      await loginWithCredentials(username, password, rememberMe);
       if (onLoginSuccess) onLoginSuccess();
     } catch (err) {
       setError(err.message || 'Gagal masuk. Periksa kembali username dan password.');
@@ -228,7 +229,16 @@ export const Login = ({ onLoginSuccess }) => {
                     required
                     className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
-                  <div className="text-right mt-1">
+                  <div className="flex items-center justify-between mt-1.5">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-medium text-slate-600 select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-polbeng-blue focus:ring-teal-500 accent-polbeng-blue"
+                      />
+                      <span>Ingat saya</span>
+                    </label>
                     <button
                       type="button"
                       onClick={() => switchMode('reset')}

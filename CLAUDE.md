@@ -25,7 +25,7 @@ konsep teknis dengan bahasa sederhana, Bahasa Indonesia).
 - `src/data/kopLogo.js` — logo KOP surat (base64, dari KOP POLBENG.docx).
 - `src/context/AuthContext.jsx` — login, sesi, profil, dark mode.
 - Role: `admin` (teknisi) & `user`; tipe user (`user_type`): mahasiswa / dosen / admin.
-- Aset: `src/assets/` (logo1.jpeg = logo aktif, gedung.jpeg = foto login).
+- Aset: `src/assets/` (logo1.jpeg = logo aktif, gedung1.jpg = foto login — versi terkompres dari gedung1.png di root; gedung.jpeg = foto login lama).
 
 ## Konvensi
 
@@ -56,6 +56,8 @@ Nama-Laboratorium; TTD kiri Pemohon (Mahasiswa+NIM / Dosen tanpa NIP), TTD kanan
 3. Ide tertunda: permohonan multi-bahan (template surat mendukung 5 baris), nomor surat otomatis (di-skip atas permintaan user), hapus file mati `src/pages/Equipment.jsx`.
 
 ## Riwayat Update
+
+- 2026-07-17: Foto login diganti ke gedung1 (foto udara Jurusan TM) — dikompres dari PNG 11 MB ke JPG 306 KB (1600px, q72) demi kecepatan loading.
 
 - 2026-07-17: Kotak info "Akun Master Admin Awal" (admin/admin123) di halaman login dihapus — kredensial tidak lagi terpampang publik.
 

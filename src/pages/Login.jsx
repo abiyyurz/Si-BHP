@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Toast } from '../components/common/Toast';
 import { ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
-import gedungImg from '../assets/gedung.jpeg';
+import gedungImg from '../assets/gedung1.jpg';
 import logoImg from '../assets/logo1.jpeg';
 
 export const Login = ({ onLoginSuccess }) => {

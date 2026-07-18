@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
+import { Modal } from '../components/common/Modal';
+import { Toast } from '../components/common/Toast';
 import {
   History as HistoryIcon,
   FileSpreadsheet,
@@ -11,27 +13,50 @@ import {
   RotateCcw,
   X
 } from 'lucide-react';
-import { getTransactions, getMaterials, getUsers } from '../utils/storage';
+import { getTransactions, getMaterials, getUsers, reverseTransaction } from '../utils/storage';
 import { exportHistoryPDF, exportHistoryExcel } from '../utils/exportUtils';
 import { formatDate, getTransactionTypeBadge } from '../utils/formatters';
 
 export const History = () => {
+  const { isAdmin, currentUser } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [users, setUsers] = useState([]);
   const [typeFilter, setTypeFilter] = useState('all');
   const [showFilterPanel, setShowFilterPanel] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [txs, mats, usrs] = await Promise.all([getTransactions(), getMaterials(), getUsers()]);
-        setTransactions(txs);
-        setMaterials(mats);
-        setUsers(usrs);
-      } catch (e) { console.error(e); }
-    })();
-  }, []);
+  // Pembatalan/koreksi transaksi
+  const [reverseTarget, setReverseTarget] = useState(null);
+  const [reverseReason, setReverseReason] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const loadData = async () => {
+    try {
+      const [txs, mats, usrs] = await Promise.all([getTransactions(), getMaterials(), getUsers()]);
+      setTransactions(txs);
+      setMaterials(mats);
+      setUsers(usrs);
+    } catch (e) { setToast({ type: 'error', message: e.message }); }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
+  const handleReverse = async (e) => {
+    e.preventDefault();
+    try {
+      await reverseTransaction({
+        transactionId: reverseTarget.id,
+        adminId: currentUser.id,
+        reason: reverseReason
+      });
+      setToast({ type: 'success', message: 'Transaksi berhasil dibatalkan. Stok dikembalikan & koreksi tercatat.' });
+      setReverseTarget(null);
+      setReverseReason('');
+      loadData();
+    } catch (err) {
+      setToast({ type: 'error', message: err.message });
+    }
+  };
 
   const matMap = new Map(materials.map(m => [m.id, m]));
   const userMap = new Map(users.map(u => [u.id, u.name]));
@@ -164,6 +189,7 @@ export const History = () => {
                 <th className="px-4 py-3.5 text-center">Jumlah Vol.</th>
                 <th className="px-4 py-3.5">Petugas / System</th>
                 <th className="px-4 py-3.5">Catatan / Alasan Audit</th>
+                {isAdmin && <th className="px-4 py-3.5 text-center">Aksi</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -200,13 +226,29 @@ export const History = () => {
                     <td className="px-4 py-4 text-slate-500 dark:text-slate-400 italic">
                       {tx.note || '-'}
                     </td>
+
+                    {isAdmin && (
+                      <td className="px-4 py-4 text-center">
+                        {(tx.type === 'in' || tx.type === 'out') && !String(tx.note || '').includes('[koreksi:') ? (
+                          <button
+                            onClick={() => { setReverseTarget(tx); setReverseReason(''); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
+                            title="Batalkan / koreksi transaksi ini"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" /> Batalkan
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
 
               {filteredTransactions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={isAdmin ? 7 : 6} className="py-12 text-center text-slate-500 dark:text-slate-400">
                     <HistoryIcon className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="font-semibold">Belum ada catatan mutasi transaksi.</p>
                   </td>
@@ -217,6 +259,48 @@ export const History = () => {
         </div>
       </div>
 
+      {/* Modal konfirmasi pembatalan/koreksi */}
+      <Modal
+        isOpen={!!reverseTarget}
+        onClose={() => setReverseTarget(null)}
+        title="Batalkan / Koreksi Transaksi"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleReverse} className="space-y-4">
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-300">
+            Baris audit asli <b>tidak dihapus</b>. Stok akan dikembalikan ke kondisi sebelum transaksi ini, dan pembatalan dicatat sebagai entri koreksi baru.
+          </div>
+
+          {reverseTarget && (
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs space-y-1">
+              <p className="text-slate-500">Bahan: <span className="font-bold text-slate-900 dark:text-white">{matMap.get(reverseTarget.material_id)?.material_name || 'N/A'}</span></p>
+              <p className="text-slate-500">Tipe: <span className="font-bold text-slate-900 dark:text-white">{typeLabels[reverseTarget.type]}</span></p>
+              <p className="text-slate-500">Jumlah: <span className="font-bold text-slate-900 dark:text-white">{reverseTarget.type === 'in' ? '+' : '-'}{reverseTarget.quantity} {matMap.get(reverseTarget.material_id)?.unit || ''}</span></p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Alasan Pembatalan *
+            </label>
+            <textarea
+              rows={2}
+              value={reverseReason}
+              onChange={(e) => setReverseReason(e.target.value)}
+              placeholder="Contoh: salah input, stok masuk uji coba"
+              required
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500"
+            ></textarea>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <Button type="button" onClick={() => setReverseTarget(null)} variant="outline" size="sm">Batal</Button>
+            <Button type="submit" variant="primary" size="sm" icon={RotateCcw}>Proses Pembatalan</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 };

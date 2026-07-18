@@ -8,7 +8,6 @@ import { Dashboard } from './pages/Dashboard';
 import { Materials } from './pages/Materials';
 import { Labs } from './pages/Labs';
 import { UsageRequests } from './pages/UsageRequests';
-import { LowStock } from './pages/LowStock';
 import { Procurement } from './pages/Procurement';
 import { History } from './pages/History';
 import { UserManagement } from './pages/UserManagement';
@@ -18,6 +17,19 @@ const AppContent = () => {
   const { currentUser, loading, isAdmin } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false); // drawer menu di layar HP
+  const [materialsFilter, setMaterialsFilter] = useState(null); // filter awal Stok Bahan (mis. dari notif kritis)
+
+  // Notif "stok kritis" tidak lagi punya halaman sendiri: arahkan ke Stok Bahan
+  // dengan filter kritis aktif. Navigasi lain mereset filter awal itu.
+  const handleNavigate = (page) => {
+    if (page === 'low-stock') {
+      setMaterialsFilter('critical');
+      setCurrentPage('materials');
+    } else {
+      setMaterialsFilter(null);
+      setCurrentPage(page);
+    }
+  };
 
   if (loading) {
     return (
@@ -35,36 +47,34 @@ const AppContent = () => {
   const renderPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard onNavigate={setCurrentPage} />;
+        return <Dashboard onNavigate={handleNavigate} />;
       case 'materials':
-        return <Materials />;
+        return <Materials initialStockFilter={materialsFilter} />;
       case 'labs':
         return <Labs />;
       case 'requests':
         return <UsageRequests />;
-      case 'low-stock':
-        return <LowStock />;
       case 'procurement':
-        return isAdmin ? <Procurement /> : <Dashboard onNavigate={setCurrentPage} />;
+        return isAdmin ? <Procurement /> : <Dashboard onNavigate={handleNavigate} />;
       case 'history':
         return <History />;
       case 'users':
-        return isAdmin ? <UserManagement /> : <Dashboard onNavigate={setCurrentPage} />;
+        return isAdmin ? <UserManagement /> : <Dashboard onNavigate={handleNavigate} />;
       case 'profile':
         return <Profile />;
       default:
-        return <Dashboard onNavigate={setCurrentPage} />;
+        return <Dashboard onNavigate={handleNavigate} />;
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
-      <Navbar onNavigate={setCurrentPage} currentPage={currentPage} onMenuClick={() => setSidebarOpen(true)} />
+      <Navbar onNavigate={handleNavigate} currentPage={currentPage} onMenuClick={() => setSidebarOpen(true)} />
 
       <div className="flex-1 flex w-full">
         <Sidebar
           currentPage={currentPage}
-          onNavigate={setCurrentPage}
+          onNavigate={handleNavigate}
           mobileOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

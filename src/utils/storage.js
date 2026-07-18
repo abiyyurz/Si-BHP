@@ -101,6 +101,9 @@ export const saveMaterial = async (materialData) => {
 
 export const deleteMaterial = async (id) => {
   const { error } = await supabase.from('materials').delete().eq('id', id);
+  if (error?.code === '23503') {
+    throw new Error('Bahan ini tidak bisa dihapus karena sudah punya riwayat permohonan/transaksi. Jejak audit harus tetap utuh.');
+  }
   throwIf(error);
 };
 
@@ -156,6 +159,36 @@ export const recordIncomingStock = async ({ material_id, quantity, date, recorde
     recorded_by,
     note: note || 'Stok masuk baru (Pengadaan / Penambahan)'
   });
+};
+
+// Batalkan/koreksi sebuah transaksi stok (mis. restock salah input).
+// Immutable-friendly: baris asli TIDAK dihapus. Efek stok dikembalikan
+// dan pembatalan dicatat sebagai ENTRI KOREKSI baru (jejak tetap utuh).
+export const reverseTransaction = async ({ transactionId, adminId, reason }) => {
+  if (!reason?.trim()) throw new Error("Alasan pembatalan wajib diisi.");
+  const { data: tx, error } = await supabase.from('transactions').select('*').eq('id', transactionId).single();
+  if (error || !tx) throw new Error("Transaksi tidak ditemukan.");
+  if (tx.type === 'adjustment' || !tx.quantity) {
+    throw new Error("Entri penyesuaian/koreksi tidak dapat dibatalkan.");
+  }
+
+  // Cegah pembatalan ganda: cari apakah sudah pernah ada entri koreksi untuk tx ini.
+  const marker = `[koreksi:${tx.id}]`;
+  const { data: existing } = await supabase.from('transactions').select('id').ilike('note', `%${marker}%`).limit(1);
+  if (existing?.length) throw new Error("Transaksi ini sudah pernah dibatalkan sebelumnya.");
+
+  const mat = await getMaterialOrThrow(tx.material_id);
+  // Balikkan arah: 'in' (nambah stok) dibatalkan = kurangi; 'out' = kembalikan.
+  const delta = tx.type === 'in' ? -tx.quantity : tx.quantity;
+  await changeStock(mat, delta);
+  await insertTransaction({
+    material_id: tx.material_id,
+    type: tx.type === 'in' ? 'out' : 'in',
+    quantity: tx.quantity,
+    recorded_by: adminId,
+    note: `Koreksi/pembatalan ${tx.type === 'in' ? 'stok masuk' : 'stok keluar'} ${tx.quantity} ${mat.unit || ''}. Alasan: ${reason.trim()} ${marker}`
+  });
+  return { success: true };
 };
 
 // USAGE REQUESTS & APPROVAL ENGINE

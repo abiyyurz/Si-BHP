@@ -14,7 +14,9 @@ import {
   AlertTriangle,
   PlusCircle,
   Filter,
-  X
+  X,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import {
   getMaterials,
@@ -30,7 +32,7 @@ import {
 } from '../utils/exportUtils';
 import { getQualityBadge } from '../utils/formatters';
 
-export const Materials = () => {
+export const Materials = ({ initialStockFilter = null } = {}) => {
   const { isAdmin, currentUser } = useAuth();
   const [materials, setMaterials] = useState([]);
   const [coursesList, setCoursesList] = useState([]);
@@ -43,6 +45,7 @@ export const Materials = () => {
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
   const [labFilter, setLabFilter] = useState('all');
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Modals state
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -86,6 +89,11 @@ export const Materials = () => {
     loadData();
   }, []);
 
+  // Terapkan filter awal dari navigasi (mis. notif "stok kritis" → tampilkan yang kritis).
+  useEffect(() => {
+    if (initialStockFilter) setStockStatusFilter(initialStockFilter);
+  }, [initialStockFilter]);
+
   const courseMap = new Map(coursesList.map(c => [c.id, c]));
   const labMap = new Map(labsList.map(l => [l.id, l]));
 
@@ -93,9 +101,11 @@ export const Materials = () => {
   const filteredMaterials = materials.filter(m => {
     const crs = courseMap.get(m.course_id);
     const crsName = crs ? crs.course_name : '';
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      m.material_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      crsName.toLowerCase().includes(searchQuery.toLowerCase());
+      m.material_name.toLowerCase().includes(q) ||
+      (m.specification || '').toLowerCase().includes(q) ||
+      crsName.toLowerCase().includes(q);
 
     const matchesSemester = semesterFilter === 'all' || m.semester === Number(semesterFilter);
     const matchesQuality = qualityFilter === 'all' || m.quality === qualityFilter;
@@ -125,6 +135,27 @@ export const Materials = () => {
     setQualityFilter('all');
     setStockStatusFilter('all');
   };
+
+  // Kelompokkan per nama bahan: tiap spesifikasi jadi sub-baris yang bisa dibuka-tutup.
+  const groups = [];
+  const groupPos = new Map();
+  for (const m of filteredMaterials) {
+    const key = m.material_name.trim().toLowerCase();
+    let pos = groupPos.get(key);
+    if (pos === undefined) {
+      pos = groups.length;
+      groupPos.set(key, pos);
+      groups.push({ key, name: m.material_name, items: [] });
+    }
+    groups[pos].items.push(m);
+  }
+
+  const toggleGroup = (key) =>
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
 
   const handleOpenAdd = () => {
     setSelectedMaterial(null);
@@ -168,8 +199,8 @@ export const Materials = () => {
     setIsRestockOpen(true);
   };
 
-  const handleSaveMaterial = async (e) => {
-    e.preventDefault();
+  const handleSaveMaterial = async (e, keepOpen = false) => {
+    e?.preventDefault();
     try {
       if (!formData.material_name.trim()) throw new Error("Nama bahan tidak boleh kosong.");
       await saveMaterial({
@@ -177,7 +208,13 @@ export const Materials = () => {
         ...formData
       });
       setToast({ type: 'success', message: `Bahan ${formData.material_name} berhasil disimpan.` });
-      setIsAddEditOpen(false);
+      // "Simpan & Tambah Lagi": biarkan modal terbuka, pertahankan nama/lab/semester/satuan,
+      // kosongkan hanya spesifikasi & stok untuk input varian berikutnya (mis. Nachi spec lain).
+      if (keepOpen && !selectedMaterial) {
+        setFormData(prev => ({ ...prev, specification: '', stock: 0, target_stock: prev.min_stock }));
+      } else {
+        setIsAddEditOpen(false);
+      }
       loadData();
     } catch (err) {
       setToast({ type: 'error', message: err.message });
@@ -384,110 +421,172 @@ export const Materials = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
-              <tr>
-                <th className="px-4 py-3.5 w-12 text-center">No</th>
+              <tr className="text-center">
+                <th className="px-4 py-3.5 w-12">No</th>
                 <th className="px-4 py-3.5">Nama Bahan Habis Pakai (BHP)</th>
                 <th className="px-4 py-3.5">Lab/Bengkel</th>
-                <th className="px-4 py-3.5 text-center">Sem.</th>
-                <th className="px-4 py-3.5 text-center">Kualitas</th>
-                <th className="px-4 py-3.5 text-center">Sisa Stok</th>
-                <th className="px-4 py-3.5 text-center">Threshold Min</th>
-                <th className="px-4 py-3.5 text-center">Status</th>
-                {isAdmin && <th className="px-4 py-3.5 text-right">Aksi Management</th>}
+                <th className="px-4 py-3.5">Sem.</th>
+                <th className="px-4 py-3.5">Kualitas</th>
+                <th className="px-4 py-3.5">Sisa Stok</th>
+                <th className="px-4 py-3.5">Threshold Min</th>
+                <th className="px-4 py-3.5">Status</th>
+                {isAdmin && <th className="px-4 py-3.5">Aksi Management</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-              {filteredMaterials.map((item, index) => {
-                const isCritical = item.stock <= item.min_stock;
-                const qualityBadge = getQualityBadge(item.quality);
-                const lab = labMap.get(item.lab_id);
+              {groups.map((group, gi) => {
+                const renderItemRow = (item, sub) => {
+                  const isCritical = item.stock <= item.min_stock;
+                  const qualityBadge = getQualityBadge(item.quality);
+                  const lab = labMap.get(item.lab_id);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
+                        isCritical ? 'bg-rose-500/5 dark:bg-rose-950/20' : ''
+                      }`}
+                    >
+                      <td className="px-4 py-4 text-center font-mono text-slate-500">
+                        {sub ? '' : (item.no || gi + 1)}
+                      </td>
+
+                      <td className={`px-4 py-4 text-slate-900 dark:text-slate-100 ${sub ? 'pl-10' : ''}`}>
+                        <div className="flex items-center gap-2">
+                          <span className={sub ? 'font-medium text-slate-700 dark:text-slate-200' : 'font-bold'}>
+                            {sub ? (item.specification || '(tanpa spesifikasi)') : item.material_name}
+                          </span>
+                          {isCritical && (
+                            <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0 animate-bounce" title="Stok Kritis!" />
+                          )}
+                        </div>
+                        {!sub && item.specification && (
+                          <div className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
+                            {item.specification}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">
+                        {lab ? lab.lab_name : ''}
+                      </td>
+
+                      <td className="px-4 py-4 text-center">
+                        <span className="inline-block whitespace-nowrap px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                          Semester {item.semester}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${qualityBadge.bg}`}>
+                          {qualityBadge.label}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 text-center font-black text-sm font-sans">
+                        <span className={isCritical ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
+                          {item.stock} {item.unit}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 text-center text-slate-500 font-mono">
+                        {item.min_stock} {item.unit}
+                      </td>
+
+                      <td className="px-4 py-4 text-center">
+                        {isCritical ? (
+                          <span className="inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                            KRITIS (Reorder)
+                          </span>
+                        ) : (
+                          <span className="inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            Aman
+                          </span>
+                        )}
+                      </td>
+
+                      {isAdmin && (
+                        <td className="px-4 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenRestock(item)}
+                              className="p-1.5 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded-lg transition-colors"
+                              title="Restock Tambah Stok"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(item)}
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition-colors"
+                              title="Edit Data"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item)}
+                              className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition-colors"
+                              title="Hapus Material"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                };
+
+                // Satu spesifikasi saja: tampilkan baris biasa (tanpa grup).
+                if (group.items.length === 1) return renderItemRow(group.items[0], false);
+
+                // Banyak spesifikasi: baris induk (nama sekali) yang bisa dibuka-tutup.
+                const expanded = expandedGroups.has(group.key);
+                const anyCritical = group.items.some(i => i.stock <= i.min_stock);
+                const totalStock = group.items.reduce((s, i) => s + i.stock, 0);
+                const lab = labMap.get(group.items[0].lab_id);
+                const unit = group.items[0].unit;
 
                 return (
-                  <tr
-                    key={item.id}
-                    className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
-                      isCritical ? 'bg-rose-500/5 dark:bg-rose-950/20' : ''
-                    }`}
-                  >
-                    <td className="px-4 py-4 text-center font-mono text-slate-500">
-                      {item.no || index + 1}
-                    </td>
-
-                    <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span>{item.material_name}</span>
-                        {isCritical && (
-                          <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0 animate-bounce" title="Stok Kritis!" />
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">
-                      {lab ? lab.lab_name : ''}
-                    </td>
-
-                    <td className="px-4 py-4 text-center">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
-                        Sem {item.semester}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-4 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${qualityBadge.bg}`}>
-                        {qualityBadge.label}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-4 text-center font-black text-sm font-sans">
-                      <span className={isCritical ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}>
-                        {item.stock} {item.unit}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-4 text-center text-slate-500 font-mono">
-                      {item.min_stock} {item.unit}
-                    </td>
-
-                    <td className="px-4 py-4 text-center">
-                      {isCritical ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
-                          KRITIS (Reorder)
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                          Aman
-                        </span>
-                      )}
-                    </td>
-
-                    {isAdmin && (
-                      <td className="px-4 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleOpenRestock(item)}
-                            className="p-1.5 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded-lg transition-colors"
-                            title="Restock Tambah Stok"
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition-colors"
-                            title="Edit Data"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition-colors"
-                            title="Hapus Material"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                  <React.Fragment key={group.key}>
+                    <tr
+                      onClick={() => toggleGroup(group.key)}
+                      className="cursor-pointer bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-colors"
+                    >
+                      <td className="px-4 py-4 text-center font-mono text-slate-500">{gi + 1}</td>
+                      <td className="px-4 py-4 text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-2">
+                          {expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                          <span className="font-bold">{group.name}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+                            {group.items.length} spesifikasi
+                          </span>
+                          {anyCritical && (
+                            <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0 animate-bounce" title="Ada stok kritis" />
+                          )}
                         </div>
                       </td>
-                    )}
-                  </tr>
+                      <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">{lab ? lab.lab_name : ''}</td>
+                      <td className="px-4 py-4 text-center text-slate-400">—</td>
+                      <td className="px-4 py-4 text-center text-slate-400">—</td>
+                      <td className="px-4 py-4 text-center font-black text-sm font-sans text-slate-900 dark:text-white">
+                        {totalStock} {unit}
+                        <span className="block text-[9px] font-normal text-slate-400">total</span>
+                      </td>
+                      <td className="px-4 py-4 text-center text-slate-400">—</td>
+                      <td className="px-4 py-4 text-center">
+                        {anyCritical ? (
+                          <span className="inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                            ADA KRITIS
+                          </span>
+                        ) : (
+                          <span className="inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            Aman
+                          </span>
+                        )}
+                      </td>
+                      {isAdmin && <td className="px-4 py-4" />}
+                    </tr>
+                    {expanded && group.items.map(item => renderItemRow(item, true))}
+                  </React.Fragment>
                 );
               })}
 
@@ -653,6 +752,16 @@ export const Materials = () => {
             >
               Batal
             </Button>
+            {!selectedMaterial && (
+              <Button
+                type="button"
+                onClick={() => handleSaveMaterial(null, true)}
+                variant="secondary"
+                size="sm"
+              >
+                Simpan & Tambah Lagi
+              </Button>
+            )}
             <Button
               type="submit"
               variant="primary"

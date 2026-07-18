@@ -56,14 +56,6 @@ export const Sidebar = ({ currentPage, onNavigate, mobileOpen = false, onClose =
       roles: ['admin', 'user']
     },
     {
-      id: 'low-stock',
-      label: 'Peringatan Stok Kritis',
-      icon: AlertTriangle,
-      badge: criticalCount > 0 ? criticalCount : null,
-      badgeColor: 'bg-rose-500 text-white font-bold',
-      roles: ['admin', 'user']
-    },
-    {
       id: 'procurement',
       label: 'Laporan Pengadaan',
       icon: ShoppingCart,

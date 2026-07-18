@@ -50,8 +50,6 @@ export const openLetterPreview = ({ request, material, course, lab, applicant })
   .kop .txt .l3 { font-size: 9pt; }
   h1.title { text-align: center; font-size: 13pt; font-weight: bold; margin: 14px 0 1px; line-height: 1.15; }
   h1.title span { display: block; }
-  h1.title span:first-child { text-decoration: underline; }
-  h1.title span:last-child { text-decoration: underline; }
   p { margin: 3px 0; text-align: justify; }
   .idtable td { padding: 0 6px 0 0; vertical-align: top; }
   .idtable td:first-child { width: 130px; }

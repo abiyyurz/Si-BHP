@@ -126,7 +126,7 @@ export const UserManagement = () => {
                   </td>
 
                   <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-mono">
-                    {usr.username || '—'}
+                    {usr.username || ''}
                   </td>
 
                   <td className="px-4 py-4 text-center">
@@ -184,7 +184,7 @@ export const UserManagement = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Registrasi Pengguna Baru SI-BHP"
+        title="Registrasi Pengguna Baru Si-BHP"
         maxWidth="max-w-md"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">

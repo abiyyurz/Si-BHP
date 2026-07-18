@@ -57,6 +57,7 @@ create table if not exists materials (
   unit text default 'Pcs',
   stock int not null default 0 check (stock >= 0),
   min_stock int not null default 0 check (min_stock >= 0),
+  target_stock int not null default 0 check (target_stock >= 0),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

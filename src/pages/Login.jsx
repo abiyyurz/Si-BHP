@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Toast } from '../components/common/Toast';
-import { ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
+import { ArrowRight, UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import gedungImg from '../assets/gedung1.jpg';
-import logoImg from '../assets/logo1.jpeg';
+import logoImg from '../assets/logo_polbeng.png';
 
 export const Login = ({ onLoginSuccess }) => {
   const { loginWithCredentials, registerNewAccount, resetPasswordByEmail } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'reset'
   const [toast, setToast] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Login States
   const [username, setUsername] = useState('');
@@ -137,7 +138,7 @@ export const Login = ({ onLoginSuccess }) => {
             <img src={gedungImg} alt="Politeknik Negeri Bengkalis" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
             <div className="absolute bottom-0 left-0 p-8 space-y-1">
-              <h1 className="text-4xl font-black text-white leading-tight tracking-tight">SI-BHP</h1>
+              <h1 className="text-4xl font-black text-white leading-tight tracking-tight">Si-BHP</h1>
               <p className="text-slate-100 text-sm font-semibold">(Sistem Informasi Bahan Habis Pakai)</p>
               <p className="text-white text-xl font-bold pt-1">Jurusan Teknik Mesin</p>
               <p className="text-slate-300 text-xs">Politeknik Negeri Bengkalis</p>
@@ -182,7 +183,7 @@ export const Login = ({ onLoginSuccess }) => {
 
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                {mode === 'register' ? 'Registrasi Pengguna Baru' : mode === 'reset' ? 'Reset Password' : 'Masuk ke Sistem SI-BHP'}
+                {mode === 'register' ? 'Registrasi Pengguna Baru' : mode === 'reset' ? 'Reset Password' : 'Masuk ke Sistem Si-BHP'}
               </h2>
               <p className="text-xs text-slate-500">
                 {mode === 'register'
@@ -221,14 +222,24 @@ export const Login = ({ onLoginSuccess }) => {
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      title={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   <div className="flex items-center justify-between mt-1.5">
                     <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-medium text-slate-600 select-none">
                       <input
@@ -254,7 +265,7 @@ export const Login = ({ onLoginSuccess }) => {
                   disabled={submitting}
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-polbeng-blue hover:bg-slate-900 text-white font-bold text-xs transition-all shadow-md shadow-polbeng-blue/20 disabled:opacity-60"
                 >
-                  <span>{submitting ? 'Memproses...' : 'Masuk Aplikasi SI-BHP'}</span>
+                  <span>{submitting ? 'Memproses...' : 'Masuk Aplikasi Si-BHP'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
@@ -325,15 +336,25 @@ export const Login = ({ onLoginSuccess }) => {
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Password * <span className="font-normal text-slate-400">(minimal 8 karakter)</span>
                   </label>
-                  <input
-                    type="password"
-                    value={regPassword}
-                    onChange={(e) => setRegPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                    className="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={8}
+                      className="w-full px-3.5 py-2 pr-10 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      title={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   {regPassword.length > 0 && regPassword.length < 8 && (
                     <p className="text-[10px] text-rose-600 font-semibold mt-1">Password kurang dari 8 karakter ({regPassword.length}/8)</p>
                   )}
@@ -399,15 +420,25 @@ export const Login = ({ onLoginSuccess }) => {
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Password Baru * <span className="font-normal text-slate-400">(minimal 8 karakter)</span>
                   </label>
-                  <input
-                    type="password"
-                    value={resetNewPassword}
-                    onChange={(e) => setResetNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    minLength={8}
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={resetNewPassword}
+                      onChange={(e) => setResetNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={8}
+                      className="w-full px-3.5 py-2.5 pr-10 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      title={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   {resetNewPassword.length > 0 && resetNewPassword.length < 8 && (
                     <p className="text-[10px] text-rose-600 font-semibold mt-1">Password kurang dari 8 karakter ({resetNewPassword.length}/8)</p>
                   )}

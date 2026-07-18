@@ -21,9 +21,16 @@ Cara verifikasi runtime aplikasi ini (dipakai sesi Claude berikutnya).
 
 ## Gotcha penting
 
-- **Marker teks halaman**: Dashboard = "Selamat datang kembali"; Stok =
-  "Master Data Bahan Habis Pakai"; Lab = "Master Data Laboratorium".
-  Jangan pakai "Dashboard" (itu teks sidebar, hilang di mobile).
+- **Marker teks halaman** (diperbarui 2026-07-18): Dashboard = "Halo,"; Stok =
+  "Data Bahan Habis Pakai (BHP)"; Lab = "Data Lab/Bengkel"; Permohonan =
+  "Permohonan & Pemakaian"; Laporan Pengadaan = "Laporan Pengadaan BHP".
+  Jangan pakai marker terlalu generik spt "Stok"/"Dashboard" (muncul di banyak
+  halaman/sidebar). Login submit button = "Masuk Aplikasi Si-BHP".
+- **Port dev**: `npm run dev` → 3000, tapi kalau 3000 dipakai Vite pindah 3001 dst
+  (cek log). CDP/HTTP ke Chrome & app WAJIB pakai `127.0.0.1` bukan `localhost`
+  (localhost → IPv6 ::1 → ETIMEDOUT). Driver CDP: pakai browser-WS dari
+  `/json/version` lalu `Target.createTarget`+`attachToTarget` (flatten sessionId);
+  memilih target dari `/json` list tidak andal. Driver kerja tersimpan di scratchpad `verify.js`.
 - **Tes expiry sesi (Ingat saya)**: JANGAN ubah `lastSeen` saat app terbuka —
   heartbeat (interval 30 dtk + beforeunload) menimpanya. Rakit sesi buatan
   dari halaman login (heartbeat belum aktif): set

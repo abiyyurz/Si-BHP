@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { hashPassword, isHashed } from './password';
 
 // ============================================================
-// SI-BHP data layer — Supabase edition.
+// Si-BHP data layer, Supabase edition.
 // Semua fungsi async; nama & perilaku dipertahankan dari versi
 // localStorage supaya perubahan di halaman minimal.
 // ============================================================
@@ -80,6 +80,7 @@ export const saveMaterial = async (materialData) => {
     ...materialData,
     stock: numStock,
     min_stock: numMinStock,
+    target_stock: Number(materialData.target_stock) || numStock,
     semester: Number(materialData.semester),
     practical_hours: Number(materialData.practical_hours),
     updated_at: new Date().toISOString()
@@ -178,7 +179,7 @@ export const createUsageRequest = async (requestData) => {
   const newRequest = {
     id: `req-${Date.now()}`,
     material_id: requestData.material_id,
-    course_id: mat.course_id,
+    course_id: requestData.course_id || null,
     user_id: requestData.user_id,
     quantity: qty,
     semester: Number(requestData.semester || mat.semester),

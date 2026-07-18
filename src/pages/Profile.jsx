@@ -232,7 +232,7 @@ export const Profile = () => {
           <div className="space-y-3 text-xs divide-y divide-slate-100 dark:divide-slate-800 pt-2">
             <div className="pt-2 flex justify-between">
               <span className="text-slate-500">Username:</span>
-              <span className="font-semibold text-slate-900 dark:text-slate-200">{currentUser?.username || '—'}</span>
+              <span className="font-semibold text-slate-900 dark:text-slate-200">{currentUser?.username || ''}</span>
             </div>
             <div className="pt-2 flex justify-between">
               <span className="text-slate-500">Hak Akses:</span>

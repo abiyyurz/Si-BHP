@@ -14,7 +14,7 @@ import {
   AlertTriangle,
   PlusCircle,
   Filter,
-  BookOpen
+  X
 } from 'lucide-react';
 import {
   getMaterials,
@@ -41,6 +41,8 @@ export const Materials = () => {
   const [semesterFilter, setSemesterFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
+  const [labFilter, setLabFilter] = useState('all');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Modals state
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -51,14 +53,15 @@ export const Materials = () => {
   const [formData, setFormData] = useState({
     material_name: '',
     specification: '',
-    course_id: '',
+    course_id: null,
     lab_id: '',
     semester: 1,
     practical_hours: 4,
     quality: 'good',
     unit: 'Pcs',
     stock: 10,
-    min_stock: 5
+    min_stock: 5,
+    target_stock: 10
   });
 
   const [restockData, setRestockData] = useState({
@@ -96,6 +99,7 @@ export const Materials = () => {
 
     const matchesSemester = semesterFilter === 'all' || m.semester === Number(semesterFilter);
     const matchesQuality = qualityFilter === 'all' || m.quality === qualityFilter;
+    const matchesLab = labFilter === 'all' || m.lab_id === labFilter;
     const matchesStock =
       stockStatusFilter === 'all'
         ? true
@@ -103,22 +107,39 @@ export const Materials = () => {
         ? m.stock <= m.min_stock
         : m.stock > m.min_stock;
 
-    return matchesSearch && matchesSemester && matchesQuality && matchesStock;
+    return matchesSearch && matchesSemester && matchesQuality && matchesStock && matchesLab;
   });
+
+  // Chip filter aktif (untuk ditampilkan & dihapus satu per satu)
+  const qualityLabels = { good: 'Baik', fair: 'Cukup', poor: 'Kurang' };
+  const activeFilters = [
+    labFilter !== 'all' && { key: 'lab', label: `Lab: ${labMap.get(labFilter)?.lab_name || ''}`, clear: () => setLabFilter('all') },
+    semesterFilter !== 'all' && { key: 'sem', label: `Semester ${semesterFilter}`, clear: () => setSemesterFilter('all') },
+    qualityFilter !== 'all' && { key: 'qual', label: `Kualitas ${qualityLabels[qualityFilter]}`, clear: () => setQualityFilter('all') },
+    stockStatusFilter !== 'all' && { key: 'stock', label: stockStatusFilter === 'critical' ? 'Stok Kritis' : 'Stok Aman', clear: () => setStockStatusFilter('all') },
+  ].filter(Boolean);
+
+  const resetAllFilters = () => {
+    setLabFilter('all');
+    setSemesterFilter('all');
+    setQualityFilter('all');
+    setStockStatusFilter('all');
+  };
 
   const handleOpenAdd = () => {
     setSelectedMaterial(null);
     setFormData({
       material_name: '',
       specification: '',
-      course_id: coursesList[0]?.id || '',
+      course_id: null,
       lab_id: labsList[0]?.id || '',
       semester: 1,
       practical_hours: 4,
       quality: 'good',
       unit: 'Pcs',
       stock: 10,
-      min_stock: 5
+      min_stock: 5,
+      target_stock: 10
     });
     setIsAddEditOpen(true);
   };
@@ -128,14 +149,15 @@ export const Materials = () => {
     setFormData({
       material_name: material.material_name,
       specification: material.specification || '',
-      course_id: material.course_id,
+      course_id: material.course_id ?? null,
       lab_id: material.lab_id || '',
       semester: material.semester,
       practical_hours: material.practical_hours,
       quality: material.quality,
       unit: material.unit,
       stock: material.stock,
-      min_stock: material.min_stock
+      min_stock: material.min_stock,
+      target_stock: material.target_stock ?? material.stock
     });
     setIsAddEditOpen(true);
   };
@@ -180,7 +202,7 @@ export const Materials = () => {
   };
 
   const handleDelete = async (material) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus data master bahan: "${material.material_name}"?`)) {
+    if (confirm(`Apakah Anda yakin ingin menghapus data bahan: "${material.material_name}"?`)) {
       try {
         await deleteMaterial(material.id);
         setToast({ type: 'info', message: `Material ${material.material_name} telah dihapus.` });
@@ -199,7 +221,7 @@ export const Materials = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-sans tracking-tight">
-              Master Data Bahan Habis Pakai (BHP)
+              Data Bahan Habis Pakai (BHP)
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
               {filteredMaterials.length} Items
@@ -242,51 +264,118 @@ export const Materials = () => {
         </div>
       </div>
 
-      {/* Search & Multi-Filter Bar */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
-        <SearchInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Cari nama bahan, mata kuliah terkait, atau spesifikasi..."
-        />
-
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <span>Filter:</span>
-          </div>
-
-          <select
-            value={semesterFilter}
-            onChange={(e) => setSemesterFilter(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="all">Semua Semester</option>
-            {[1, 2, 3, 4, 5, 6].map(s => (
-              <option key={s} value={s}>Semester {s}</option>
+      {/* Search & Filter Bar */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        {/* Chip filter aktif */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters.map(f => (
+              <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                {f.label}
+                <button onClick={f.clear} className="p-0.5 rounded-full hover:bg-teal-200/60 dark:hover:bg-teal-800/60" title="Hapus filter">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
             ))}
-          </select>
+            <button onClick={resetAllFilters} className="text-[11px] font-semibold text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 underline underline-offset-2">
+              Hapus semua
+            </button>
+          </div>
+        )}
 
-          <select
-            value={qualityFilter}
-            onChange={(e) => setQualityFilter(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="all">Semua Kualitas</option>
-            <option value="good">Kualitas Baik</option>
-            <option value="fair">Kualitas Cukup</option>
-            <option value="poor">Kualitas Kurang</option>
-          </select>
+        <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Cari nama bahan, mata kuliah terkait, atau spesifikasi..."
+          />
 
-          <select
-            value={stockStatusFilter}
-            onChange={(e) => setStockStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="all">Semua Status Stok</option>
-            <option value="safe">Stok Aman</option>
-            <option value="critical">Stok Kritis (Reorder)</option>
-          </select>
+          {/* Tombol Filter + popup */}
+          <div className="relative w-full md:w-auto">
+            <button
+              onClick={() => setShowFilterPanel(v => !v)}
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-slate-400" />
+              <span>Filter</span>
+              {activeFilters.length > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-500 text-white text-[10px] font-bold">
+                  {activeFilters.length}
+                </span>
+              )}
+            </button>
+
+            {showFilterPanel && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowFilterPanel(false)} />
+                <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-40 space-y-3 animate-slide-down">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Filter Bahan</h4>
+                    {activeFilters.length > 0 && (
+                      <button onClick={resetAllFilters} className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Lab/Bengkel</label>
+                    <select
+                      value={labFilter}
+                      onChange={(e) => setLabFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Lab/Bengkel</option>
+                      {labsList.map(lab => (
+                        <option key={lab.id} value={lab.id}>{lab.lab_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Semester</label>
+                    <select
+                      value={semesterFilter}
+                      onChange={(e) => setSemesterFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Semester</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                        <option key={s} value={s}>Semester {s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Kualitas</label>
+                    <select
+                      value={qualityFilter}
+                      onChange={(e) => setQualityFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Kualitas</option>
+                      <option value="good">Kualitas Baik</option>
+                      <option value="fair">Kualitas Cukup</option>
+                      <option value="poor">Kualitas Kurang</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Status Stok</label>
+                    <select
+                      value={stockStatusFilter}
+                      onChange={(e) => setStockStatusFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Status Stok</option>
+                      <option value="safe">Stok Aman</option>
+                      <option value="critical">Stok Kritis (Reorder)</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -298,10 +387,8 @@ export const Materials = () => {
               <tr>
                 <th className="px-4 py-3.5 w-12 text-center">No</th>
                 <th className="px-4 py-3.5">Nama Bahan Habis Pakai (BHP)</th>
-                <th className="px-4 py-3.5">Mata Kuliah Terkait</th>
-                <th className="px-4 py-3.5">Laboratorium</th>
+                <th className="px-4 py-3.5">Lab/Bengkel</th>
                 <th className="px-4 py-3.5 text-center">Sem.</th>
-                <th className="px-4 py-3.5 text-center">Jam Prac</th>
                 <th className="px-4 py-3.5 text-center">Kualitas</th>
                 <th className="px-4 py-3.5 text-center">Sisa Stok</th>
                 <th className="px-4 py-3.5 text-center">Threshold Min</th>
@@ -313,7 +400,6 @@ export const Materials = () => {
               {filteredMaterials.map((item, index) => {
                 const isCritical = item.stock <= item.min_stock;
                 const qualityBadge = getQualityBadge(item.quality);
-                const crs = courseMap.get(item.course_id);
                 const lab = labMap.get(item.lab_id);
 
                 return (
@@ -337,30 +423,13 @@ export const Materials = () => {
                     </td>
 
                     <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">
-                      {crs ? (
-                        <div>
-                          <div className="font-bold text-slate-800 dark:text-slate-200">{crs.course_name}</div>
-                          <div className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold">
-                            {crs.day_of_week} ({crs.start_time} - {crs.end_time})
-                          </div>
-                        </div>
-                      ) : (
-                        'Umum / Praktikum'
-                      )}
-                    </td>
-
-                    <td className="px-4 py-4 text-slate-600 dark:text-slate-300 font-medium">
-                      {lab ? lab.lab_name : '—'}
+                      {lab ? lab.lab_name : ''}
                     </td>
 
                     <td className="px-4 py-4 text-center">
                       <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
                         Sem {item.semester}
                       </span>
-                    </td>
-
-                    <td className="px-4 py-4 text-center text-slate-600 dark:text-slate-300 font-mono">
-                      {item.practical_hours} Jam
                     </td>
 
                     <td className="px-4 py-4 text-center">
@@ -404,7 +473,7 @@ export const Materials = () => {
                           <button
                             onClick={() => handleOpenEdit(item)}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-lg transition-colors"
-                            title="Edit Data Master"
+                            title="Edit Data"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -439,7 +508,7 @@ export const Materials = () => {
       <Modal
         isOpen={isAddEditOpen}
         onClose={() => setIsAddEditOpen(false)}
-        title={selectedMaterial ? `Edit Data: ${selectedMaterial.material_name}` : 'Tambah Master Bahan (BHP) Baru'}
+        title={selectedMaterial ? `Edit Data: ${selectedMaterial.material_name}` : 'Tambah Bahan (BHP) Baru'}
         maxWidth="max-w-xl"
       >
         <form onSubmit={handleSaveMaterial} className="space-y-4">
@@ -473,71 +542,36 @@ export const Materials = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Laboratorium *
+              Lab/Bengkel *
             </label>
             <select
               value={formData.lab_id}
               onChange={(e) => setFormData({ ...formData, lab_id: e.target.value })}
               className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
             >
-              {labsList.length === 0 && <option value="">(Belum ada Laboratorium — tambah di menu Laboratorium)</option>}
+              {labsList.length === 0 && <option value="">(Belum ada Lab/Bengkel, tambah di menu Lab/Bengkel)</option>}
               {labsList.map(lab => (
                 <option key={lab.id} value={lab.id}>{lab.lab_name}</option>
               ))}
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Pilih Mata Kuliah Terkait *
-              </label>
-              <select
-                value={formData.course_id}
-                onChange={(e) => setFormData({ ...formData, course_id: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-              >
-                {coursesList.map(crs => (
-                  <option key={crs.id} value={crs.id}>
-                    {crs.course_name} ({crs.day_of_week} {crs.start_time}-{crs.end_time})
-                  </option>
-                ))}
-                {coursesList.length === 0 && (
-                  <option value="">(Belum Ada Mata Kuliah - Tambah di menu Mata Kuliah)</option>
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Semester Digunakan *
-              </label>
-              <select
-                value={formData.semester}
-                onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
-                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-              >
-                {[1, 2, 3, 4, 5, 6].map(s => (
-                  <option key={s} value={s}>Semester {s}</option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Semester Digunakan *
+            </label>
+            <select
+              value={formData.semester}
+              onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                <option key={s} value={s}>Semester {s}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Jam Practical *
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={formData.practical_hours}
-                onChange={(e) => setFormData({ ...formData, practical_hours: Number(e.target.value) })}
-                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-              />
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Kualitas *
@@ -568,7 +602,7 @@ export const Materials = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Stok Awal Saat Ini *
@@ -594,6 +628,20 @@ export const Materials = () => {
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Stok Ideal (Target Penuh) *
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.target_stock}
+                onChange={(e) => setFormData({ ...formData, target_stock: Number(e.target.value) })}
+                className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Patokan stok penuh untuk hitung kebutuhan pengadaan.</p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -610,7 +658,7 @@ export const Materials = () => {
               variant="primary"
               size="sm"
             >
-              Simpan Data Master
+              Simpan Data
             </Button>
           </div>
         </form>

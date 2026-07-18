@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Moon, Sun, Bell, LogOut, User, Shield, Layers, AlertTriangle, CheckCircle, Menu } from 'lucide-react';
 import { getMaterials, getRequests } from '../../utils/storage';
-import logoImg from '../../assets/logo1.jpeg';
+import logoImg from '../../assets/logo_polbeng.png';
 
 export const Navbar = ({ onNavigate, currentPage, onMenuClick }) => {
   const { currentUser, logout, darkMode, toggleDarkMode, isAdmin } = useAuth();
@@ -46,7 +46,7 @@ export const Navbar = ({ onNavigate, currentPage, onMenuClick }) => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-slate-900 dark:text-white text-base tracking-tight font-sans">
-                  SI-BHP
+                  Si-BHP
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-full bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 border border-teal-300 dark:border-teal-800">
                   v1.1 Polbeng

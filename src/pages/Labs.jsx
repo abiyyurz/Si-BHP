@@ -93,10 +93,10 @@ export const Labs = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-sans tracking-tight">
-              Master Data Laboratorium
+              Data Lab/Bengkel
             </h2>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300">
-              {labsList.length} Laboratorium
+              {labsList.length} Lab/Bengkel
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -141,11 +141,11 @@ export const Labs = () => {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
                     <UserCog className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
-                    <span className="font-semibold">{lab.head_name || '—'}</span>
+                    <span className="font-semibold">{lab.head_name || ''}</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-mono">
                     <BadgeCheck className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span>NIP. {lab.head_nip || '—'}</span>
+                    <span>NIP. {lab.head_nip || ''}</span>
                   </div>
                 </div>
               </div>

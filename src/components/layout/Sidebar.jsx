@@ -4,11 +4,11 @@ import {
   LayoutDashboard,
   Boxes,
   FlaskConical,
-  BookOpen,
   FileSpreadsheet,
   AlertTriangle,
   History,
-  Users
+  Users,
+  ShoppingCart
 } from 'lucide-react';
 import { getMaterials, getRequests } from '../../utils/storage';
 
@@ -43,14 +43,8 @@ export const Sidebar = ({ currentPage, onNavigate, mobileOpen = false, onClose =
     },
     {
       id: 'labs',
-      label: 'Laboratorium',
+      label: 'Lab/Bengkel',
       icon: FlaskConical,
-      roles: ['admin', 'user']
-    },
-    {
-      id: 'courses',
-      label: 'Mata Kuliah Terkait',
-      icon: BookOpen,
       roles: ['admin', 'user']
     },
     {
@@ -68,6 +62,12 @@ export const Sidebar = ({ currentPage, onNavigate, mobileOpen = false, onClose =
       badge: criticalCount > 0 ? criticalCount : null,
       badgeColor: 'bg-rose-500 text-white font-bold',
       roles: ['admin', 'user']
+    },
+    {
+      id: 'procurement',
+      label: 'Laporan Pengadaan',
+      icon: ShoppingCart,
+      roles: ['admin']
     },
     {
       id: 'history',
@@ -137,7 +137,7 @@ export const Sidebar = ({ currentPage, onNavigate, mobileOpen = false, onClose =
 
       <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-          Lab Bengkel Kerja © 2026
+          Si-BHP 2026
         </p>
         <p className="text-[9px] text-slate-400 dark:text-slate-600 font-mono mt-0.5">
           Politeknik Negeri Bengkalis

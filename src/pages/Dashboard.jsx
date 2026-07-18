@@ -54,11 +54,11 @@ export const Dashboard = ({ onNavigate }) => {
       
       {/* Welcome Banner */}
       <div
-        className="relative p-6 sm:p-8 rounded-3xl bg-cover bg-center text-white overflow-hidden shadow-xl border border-slate-800"
+        className="relative flex items-center min-h-[240px] sm:min-h-[280px] p-6 sm:p-8 rounded-3xl bg-cover bg-center text-white overflow-hidden shadow-xl border border-slate-800"
         style={{ backgroundImage: `url(${welcomeBg})` }}
       >
         <div className="absolute top-0 right-0 -mt-6 -mr-6 w-60 h-60 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative z-10 w-full flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-teal-300">
               <Calendar className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ export const Dashboard = ({ onNavigate }) => {
         <MetricCard
           title="Total Jenis Bahan (BHP)"
           value={materials.length}
-          unit="Item Master"
+          unit="Jenis Item"
           icon={Boxes}
           color="blue"
           badgeText="Terdaftar di Lab"

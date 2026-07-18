@@ -12,7 +12,9 @@ import {
   BookOpen,
   Printer,
   Trash2,
-  Ban
+  Ban,
+  Filter,
+  X
 } from 'lucide-react';
 import {
   getRequests,
@@ -55,6 +57,10 @@ export const UsageRequests = () => {
   const [reasonReq, setReasonReq] = useState(null);
   const [reasonText, setReasonText] = useState('');
 
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
   // Modal states
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
@@ -65,6 +71,7 @@ export const UsageRequests = () => {
   // Form state for creating request
   const [formData, setFormData] = useState({
     material_id: '',
+    course_id: '',
     quantity: 1,
     semester: 1,
     practical_hours: 4,
@@ -105,9 +112,15 @@ export const UsageRequests = () => {
   const courseMap = new Map(coursesList.map(c => [c.id, c]));
   const userMap = new Map(users.map(u => [u.id, u.name]));
 
-  const displayRequests = isAdmin
+  const displayRequests = (isAdmin
     ? requests
-    : requests.filter(r => r.user_id === currentUser?.id);
+    : requests.filter(r => r.user_id === currentUser?.id)
+  ).filter(r => statusFilter === 'all' || r.status === statusFilter);
+
+  const statusLabels = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak', cancelled: 'Dibatalkan' };
+  const activeFilters = [
+    statusFilter !== 'all' && { key: 'status', label: `Status: ${statusLabels[statusFilter]}`, clear: () => setStatusFilter('all') },
+  ].filter(Boolean);
 
   const handleMaterialChange = (materialId) => {
     const mat = matMap.get(materialId);
@@ -189,7 +202,7 @@ export const UsageRequests = () => {
       return;
     }
     const mat = matMap.get(printReq.material_id);
-    const course = courseMap.get(printReq.course_id || mat?.course_id);
+    const course = printReq.course_id ? { course_name: printReq.course_id } : null;
     const lab = labsList.find(l => l.id === printData.lab_id);
     if (!lab) {
       setToast({ type: 'error', message: 'Pilih laboratorium untuk penanda tangan surat terlebih dahulu.' });
@@ -258,6 +271,74 @@ export const UsageRequests = () => {
         </Button>
       </div>
 
+      {/* Filter Bar */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters.map(f => (
+              <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                {f.label}
+                <button onClick={f.clear} className="p-0.5 rounded-full hover:bg-teal-200/60 dark:hover:bg-teal-800/60" title="Hapus filter">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            {displayRequests.length} permohonan ditampilkan
+          </span>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowFilterPanel(v => !v)}
+              className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-slate-400" />
+              <span>Filter</span>
+              {activeFilters.length > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-500 text-white text-[10px] font-bold">
+                  {activeFilters.length}
+                </span>
+              )}
+            </button>
+
+            {showFilterPanel && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowFilterPanel(false)} />
+                <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-40 space-y-3 animate-slide-down">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Filter Permohonan</h4>
+                    {activeFilters.length > 0 && (
+                      <button onClick={() => setStatusFilter('all')} className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Status</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Status</option>
+                      <option value="pending">Menunggu</option>
+                      <option value="approved">Disetujui</option>
+                      <option value="rejected">Ditolak</option>
+                      <option value="cancelled">Dibatalkan</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Requests Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -278,7 +359,6 @@ export const UsageRequests = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {displayRequests.map((req) => {
                 const mat = matMap.get(req.material_id);
-                const crs = courseMap.get(req.course_id || mat?.course_id);
                 const isStockInsufficient = mat && mat.stock < req.quantity;
                 const statusBadge = getRequestStatusBadge(req.status);
 
@@ -297,7 +377,7 @@ export const UsageRequests = () => {
                         {mat?.material_name || 'Material'}
                       </div>
                       <div className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">
-                        {crs ? `${crs.course_name} (${crs.day_of_week} ${crs.start_time}-${crs.end_time})` : 'Umum'}
+                        {req.course_id || 'Umum'}
                       </div>
                     </td>
 
@@ -435,6 +515,19 @@ export const UsageRequests = () => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Mata Kuliah Terkait
+            </label>
+            <input
+              type="text"
+              value={formData.course_id}
+              onChange={(e) => setFormData({ ...formData, course_id: e.target.value })}
+              placeholder="Contoh: Praktikum Kerja Bangku"
+              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -474,7 +567,7 @@ export const UsageRequests = () => {
                 onChange={(e) => setFormData({ ...formData, semester: Number(e.target.value) })}
                 className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
               >
-                {[1, 2, 3, 4, 5, 6].map(s => (
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
                   <option key={s} value={s}>Semester {s}</option>
                 ))}
               </select>
@@ -703,7 +796,7 @@ export const UsageRequests = () => {
             >
               {labsList.length === 0 && <option value="">(Belum ada Laboratorium)</option>}
               {labsList.map(lab => (
-                <option key={lab.id} value={lab.id}>{lab.lab_name} — {lab.head_name}</option>
+                <option key={lab.id} value={lab.id}>{lab.lab_name}, {lab.head_name}</option>
               ))}
             </select>
             <p className="text-[10px] text-slate-400 mt-1">

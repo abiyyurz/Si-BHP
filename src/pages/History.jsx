@@ -8,7 +8,8 @@ import {
   Filter,
   ArrowUpRight,
   ArrowDownLeft,
-  RotateCcw
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { getTransactions, getMaterials, getUsers } from '../utils/storage';
 import { exportHistoryPDF, exportHistoryExcel } from '../utils/exportUtils';
@@ -19,6 +20,7 @@ export const History = () => {
   const [materials, setMaterials] = useState([]);
   const [users, setUsers] = useState([]);
   const [typeFilter, setTypeFilter] = useState('all');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -37,6 +39,11 @@ export const History = () => {
   const filteredTransactions = transactions.filter(tx => {
     return typeFilter === 'all' || tx.type === typeFilter;
   });
+
+  const typeLabels = { in: 'Stok Masuk', out: 'Stok Keluar', adjustment: 'Penyesuaian' };
+  const activeFilters = [
+    typeFilter !== 'all' && { key: 'type', label: `Tipe: ${typeLabels[typeFilter]}`, clear: () => setTypeFilter('all') },
+  ].filter(Boolean);
 
   return (
     <div className="space-y-6">
@@ -79,26 +86,69 @@ export const History = () => {
       </div>
 
       {/* Filter */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <span>Tampilkan Tipe Mutasi:</span>
-        </div>
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters.map(f => (
+              <span key={f.key} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                {f.label}
+                <button onClick={f.clear} className="p-0.5 rounded-full hover:bg-teal-200/60 dark:hover:bg-teal-800/60" title="Hapus filter">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
 
-        <div className="flex items-center gap-2">
-          {['all', 'in', 'out', 'adjustment'].map(t => (
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            {filteredTransactions.length} transaksi ditampilkan
+          </span>
+
+          <div className="relative">
             <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                typeFilter === t
-                  ? 'bg-polbeng-blue text-white shadow-sm dark:bg-sky-600'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-              }`}
+              onClick={() => setShowFilterPanel(v => !v)}
+              className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             >
-              {t === 'all' ? 'Semua Log' : t === 'in' ? 'Stok Masuk (+)' : t === 'out' ? 'Stok Keluar (-)' : 'Penyesuaian (±)'}
+              <Filter className="w-4 h-4 text-slate-400" />
+              <span>Filter</span>
+              {activeFilters.length > 0 && (
+                <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-teal-500 text-white text-[10px] font-bold">
+                  {activeFilters.length}
+                </span>
+              )}
             </button>
-          ))}
+
+            {showFilterPanel && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setShowFilterPanel(false)} />
+                <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-40 space-y-3 animate-slide-down">
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">Filter Mutasi</h4>
+                    {activeFilters.length > 0 && (
+                      <button onClick={() => setTypeFilter('all')} className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">Tipe Mutasi</label>
+                    <select
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="all">Semua Log</option>
+                      <option value="in">Stok Masuk</option>
+                      <option value="out">Stok Keluar</option>
+                      <option value="adjustment">Penyesuaian</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

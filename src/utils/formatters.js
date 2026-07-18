@@ -1,5 +1,5 @@
 /**
- * Utility formatters for SI-BHP application
+ * Utility formatters for Si-BHP application
  */
 
 export const formatDate = (dateString) => {

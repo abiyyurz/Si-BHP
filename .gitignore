@@ -37,3 +37,13 @@ pnpm-debug.log*
 ~$*
 surat_dosen.pdf
 surat_mahasiswa.pdf
+
+# Aset mentah/duplikat & data kerja di root (versi asli app ada di src/assets & docs/images)
+/*.png
+/*.jpg
+/*.jpeg
+/*.xlsx
+
+# Dokumen perencanaan lama
+/PRD-*.md
+/TEMPLATE-PRD.md
